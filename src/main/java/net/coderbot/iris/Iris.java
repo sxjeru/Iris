@@ -41,11 +41,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.dimension.DimensionType;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import net.fabricmc.api.ClientModInitializer;
@@ -399,6 +395,16 @@ public class Iris implements ClientModInitializer {
 			irisConfig.save();
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static void logChatFatal(String name, String log) {
+		if (Minecraft.getInstance().player != null) {
+			if (irisConfig.isDebugEnabled()) {
+				Minecraft.getInstance().player.displayClientMessage(new TranslatableComponent("iris.shaders.debug.loaderror", name, log), false);
+			} else {
+				Minecraft.getInstance().player.displayClientMessage(new TranslatableComponent("iris.shaders.normal.loaderror", name, getCurrentPackName()), false);
+			}
 		}
 	}
 

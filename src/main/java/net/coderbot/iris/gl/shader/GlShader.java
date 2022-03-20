@@ -3,6 +3,7 @@
 package net.coderbot.iris.gl.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.coderbot.iris.Iris;
 import net.coderbot.iris.gl.GlResource;
 import net.coderbot.iris.gl.IrisRenderSystem;
 import org.apache.logging.log4j.LogManager;
@@ -43,6 +44,7 @@ public class GlShader extends GlResource {
 		int result = GlStateManager.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);
 
 		if (result != GL20C.GL_TRUE) {
+			Iris.logChatFatal(name, log);
 			throw new RuntimeException("Shader compilation failed, see log for details");
 		}
 
