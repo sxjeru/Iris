@@ -11,6 +11,7 @@ import net.coderbot.iris.gl.uniform.UniformHolder;
 import net.coderbot.iris.layer.GbufferPrograms;
 import net.coderbot.iris.mixin.statelisteners.BooleanStateAccessor;
 import net.coderbot.iris.mixin.statelisteners.GlStateManagerAccessor;
+import net.coderbot.iris.mixin.BossHealthOverlayAccessor;
 import net.coderbot.iris.samplers.TextureAtlasTracker;
 import net.coderbot.iris.shaderpack.IdMap;
 import net.coderbot.iris.shaderpack.PackDirectives;
@@ -22,10 +23,12 @@ import net.coderbot.iris.vendored.joml.Vector3d;
 import net.coderbot.iris.vendored.joml.Vector4f;
 import net.coderbot.iris.vendored.joml.Vector4i;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.BossHealthOverlay;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -97,6 +100,7 @@ public final class CommonUniforms {
 			.uniform1b(PER_FRAME, "hideGUI", () -> client.options.hideGui)
 			.uniform1f(PER_FRAME, "eyeAltitude", () -> Objects.requireNonNull(client.getCameraEntity()).getEyeY())
 			.uniform1i(PER_FRAME, "isEyeInWater", CommonUniforms::isEyeInWater)
+			.uniform1i(PER_FRAME, "bossBattle", CommonUniforms::getBossStatus)
 			.uniform1f(PER_FRAME, "blindness", CommonUniforms::getBlindness)
 			.uniform1i(PER_FRAME, "heldBlockLightValue", new HeldItemLightingSupplier(InteractionHand.MAIN_HAND))
 			.uniform1i(PER_FRAME, "heldBlockLightValue2", new HeldItemLightingSupplier(InteractionHand.OFF_HAND))
@@ -116,6 +120,25 @@ public final class CommonUniforms {
 			.uniform1f(PER_TICK, "wetness", new SmoothedFloat(600f, 600f, CommonUniforms::getRainStrength, updateNotifier))
 			.uniform3d(PER_FRAME, "skyColor", CommonUniforms::getSkyColor)
 			.uniform3d(PER_FRAME, "fogColor", CapturedRenderingState.INSTANCE::getFogColor);
+	}
+
+	private static int getBossStatus() {
+		BossHealthOverlay overlay = Minecraft.getInstance().gui.getBossOverlay();
+		if (!((BossHealthOverlayAccessor) overlay).getEvents().isEmpty()) {
+			BossEvent firstEvent = ((BossHealthOverlayAccessor) overlay).getEvents()
+				.values().stream().findFirst().get(); // todo this is stupid
+
+			if (firstEvent.shouldCreateWorldFog() && !firstEvent.shouldDarkenScreen() && firstEvent.shouldPlayBossMusic() && firstEvent.getColor() == BossEvent.BossBarColor.PINK) {
+				return 2;
+			} else if (firstEvent.getColor() == BossEvent.BossBarColor.PURPLE && firstEvent.shouldDarkenScreen()) {
+				return 3;
+			} else if (firstEvent.getColor() == BossEvent.BossBarColor.RED && firstEvent.getOverlay() == BossEvent.BossBarOverlay.NOTCHED_10) {
+				return 4;
+			}
+
+			return 1;
+		}
+		return 0;
 	}
 
 	private static Vector3d getSkyColor() {
