@@ -39,7 +39,9 @@ import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.jetbrains.annotations.NotNull;
@@ -403,7 +405,7 @@ public class Iris implements ClientModInitializer {
 			if (irisConfig.isDebugEnabled()) {
 				Minecraft.getInstance().player.displayClientMessage(new TranslatableComponent("iris.shaders.debug.loaderror", name, log), false);
 			} else {
-				Minecraft.getInstance().player.displayClientMessage(new TranslatableComponent("iris.shaders.normal.loaderror", name, getCurrentPackName()), false);
+				Minecraft.getInstance().getToasts().addToast(new SystemToast(SystemToast.SystemToastIds.PACK_LOAD_FAILURE, new TranslatableComponent("iris.shaders.normal.loaderrortitle"), Component.nullToEmpty(name)));
 			}
 		}
 	}

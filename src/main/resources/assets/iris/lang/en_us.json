@@ -7,7 +7,7 @@
   "iris.shaders.debug.failure": "Cannot enable debugging, your computer does not support debug features.",
   "iris.shaders.debug.restart": "You do not have a debug context, please restart to enable debugging.",
 
-  "iris.shaders.normal.loaderror": "Failed to load shader file \"%s\" for pack \"%s\".",
+  "iris.shaders.normal.loaderrortitle": "Failed to load shader",
   "iris.shaders.debug.loaderror": "Failed to load shader file \"%s\", log: \"%s\"",
 
   "iris.keybind.reload": "Reload Shaders",
