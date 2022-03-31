@@ -6,9 +6,13 @@
 package net.coderbot.iris.gl;
 
 import net.coderbot.iris.Iris;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.AMDDebugOutput;
 import org.lwjgl.opengl.ARBDebugOutput;
+import org.lwjgl.opengl.EXTDebugLabel;
+import org.lwjgl.opengl.EXTDebugMarker;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLDebugMessageAMDCallback;
@@ -21,6 +25,8 @@ import java.io.PrintStream;
 import java.util.function.Consumer;
 
 public final class GLDebug {
+	private static DebugTool activeDebug = DebugTool.OFF;
+
 	/**
 	 * Sets up debug callbacks
 	 * @return 0 for failure, 1 for success, 2 for restart required.
@@ -86,6 +92,7 @@ public final class GLDebug {
 				printTrace(stream);
 			});
 			GL43C.glDebugMessageCallback(proc, 0L);
+			activeDebug = DebugTool.CORE;
 			if ((GL43C.glGetInteger(33310) & 2) == 0) {
 				Iris.logger.warn("[GL] Warning: A non-debug context may not produce any debug output.");
 				GL43C.glEnable(37600);
@@ -104,6 +111,7 @@ public final class GLDebug {
 				printTrace(stream);
 			});
 			KHRDebug.glDebugMessageCallback(proc, 0L);
+			activeDebug = DebugTool.KHR;
 			if (caps.OpenGL30 && (GL43C.glGetInteger(33310) & 2) == 0) {
 				Iris.logger.warn("[GL] Warning: A non-debug context may not produce any debug output.");
 				GL43C.glEnable(37600);
@@ -122,6 +130,7 @@ public final class GLDebug {
 				printTrace(stream);
 			});
 			ARBDebugOutput.glDebugMessageCallbackARB(proc, 0L);
+			activeDebug = DebugTool.ARB;
 			return 1;
 		} else if (caps.GL_AMD_debug_output) {
 			Iris.logger.info("[GL] Using AMD_debug_output for error logging.");
@@ -134,9 +143,11 @@ public final class GLDebug {
 				printTrace(stream);
 			});
 			AMDDebugOutput.glDebugMessageCallbackAMD(proc, 0L);
+			activeDebug = DebugTool.AMD;
 			return 1;
 		} else {
 			Iris.logger.info("[GL] No debug output implementation is available, cannot return debug info.");
+			activeDebug = DebugTool.OFF;
 			return 0;
 		}
 	}
@@ -161,6 +172,50 @@ public final class GLDebug {
 		} else {
 			Iris.logger.info("[GL] No debug output implementation is available, cannot disable debug info.");
 			return 0;
+		}
+	}
+
+	public static void setDebugEvent(String event) {
+		if (Iris.getIrisConfig().isDebugEnabled()) {
+			switch (activeDebug) {
+				// ARB and AMD implementations do not have debug events.
+				case CORE:
+					GL43.glPushDebugGroup(GL43C.GL_DEBUG_SOURCE_APPLICATION, 1, event);
+					break;
+				case KHR:
+					KHRDebug.glPushDebugGroup(GL43C.GL_DEBUG_SOURCE_APPLICATION, 1, event);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	public static void stopDebugEvent() {
+		if (Iris.getIrisConfig().isDebugEnabled()) {
+			switch (activeDebug) {
+				// ARB and AMD implementations do not have debug events.
+				case CORE: GL43.glPopDebugGroup(); break;
+				case KHR: KHRDebug.glPopDebugGroup(); break;
+				default:
+					break;
+			}
+		}
+	}
+
+	public static void setObjectLabel(int identifier, int handle, String label) {
+		if (Iris.getIrisConfig().isDebugEnabled()) {
+			switch (activeDebug) {
+				// ARB and AMD implementations do not have debug events.
+				case CORE:
+					GL43.glObjectLabel(identifier, handle, label);
+					break;
+				case KHR:
+					KHRDebug.glObjectLabel(identifier, handle, label);
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
@@ -316,5 +371,13 @@ public final class GLDebug {
 			default:
 				return APIUtil.apiUnknownToken(severity);
 		}
+	}
+
+	public enum DebugTool {
+		OFF,
+		CORE,
+		KHR,
+		ARB,
+		AMD
 	}
 }
