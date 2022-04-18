@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.block_rendering.BlockMaterialMapping;
@@ -38,6 +39,9 @@ import net.coderbot.iris.shaderpack.texture.TextureStage;
 import net.coderbot.iris.shaderpack.transform.StringTransformations;
 import net.coderbot.iris.shadows.EmptyShadowMapRenderer;
 import net.coderbot.iris.shadows.ShadowMapRenderer;
+import net.coderbot.iris.texture.pbr.PBRTextureHolder;
+import net.coderbot.iris.texture.pbr.PBRTextureManager;
+import net.coderbot.iris.texunits.TextureUnit;
 import net.coderbot.iris.uniforms.CapturedRenderingState;
 import net.coderbot.iris.uniforms.CommonUniforms;
 import net.coderbot.iris.uniforms.FrameUpdateNotifier;
@@ -136,7 +140,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 	private final SodiumTerrainPipeline sodiumTerrainPipeline;
 
-	private boolean isBeforeTranslucent;
+	private boolean shouldBindPBR;
 
 	private final float sunPathRotation;
 	private final boolean shouldRenderClouds;
@@ -151,6 +155,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	private final List<String> programStackLog = new ArrayList<>();
 
 	private WorldRenderingPhase phase;
+	private boolean isBeforeTranslucent;
 
 	public DeferredWorldRenderingPipeline(ProgramSet programs) {
 		Objects.requireNonNull(programs);
@@ -245,7 +250,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 			ProgramSamplers.CustomTextureSamplerInterceptor customTextureSamplerInterceptor = ProgramSamplers.customTextureSamplerInterceptor(builder, customTextureManager.getCustomTextureIdMap().getOrDefault(TextureStage.GBUFFERS_AND_SHADOW, Object2ObjectMaps.emptyMap()));
 
 			IrisSamplers.addRenderTargetSamplers(customTextureSamplerInterceptor, flipped, renderTargets, false);
-			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor, customTextureManager.getNormals(), customTextureManager.getSpecular());
+			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor);
 			IrisSamplers.addWorldDepthSamplers(customTextureSamplerInterceptor, renderTargets);
 			IrisSamplers.addNoiseSampler(customTextureSamplerInterceptor, customTextureManager.getNoiseTexture());
 
@@ -275,7 +280,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 			ProgramSamplers.CustomTextureSamplerInterceptor customTextureSamplerInterceptor = ProgramSamplers.customTextureSamplerInterceptor(builder, customTextureManager.getCustomTextureIdMap().getOrDefault(TextureStage.GBUFFERS_AND_SHADOW, Object2ObjectMaps.emptyMap()));
 
 			IrisSamplers.addRenderTargetSamplers(customTextureSamplerInterceptor, () -> flippedAfterPrepare, renderTargets, false);
-			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor, customTextureManager.getNormals(), customTextureManager.getSpecular());
+			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor);
 			IrisSamplers.addNoiseSampler(customTextureSamplerInterceptor, customTextureManager.getNoiseTexture());
 
 			// Only initialize these samplers if the shadow map renderer exists.
@@ -593,7 +598,11 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		IrisSamplers.addRenderTargetSamplers(customTextureSamplerInterceptor, flipped, renderTargets, false);
 		IrisImages.addRenderTargetImages(builder, flipped, renderTargets);
 
-		IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor, customTextureManager.getNormals(), customTextureManager.getSpecular());
+		if (!shouldBindPBR) {
+			shouldBindPBR = IrisSamplers.hasPBRSamplers(customTextureSamplerInterceptor);
+		}
+
+		IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor);
 		IrisSamplers.addWorldDepthSamplers(customTextureSamplerInterceptor, renderTargets);
 		IrisSamplers.addNoiseSampler(customTextureSamplerInterceptor, customTextureManager.getNoiseTexture());
 
@@ -681,6 +690,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		}
 	}
 
+	@Override
 	public void destroy() {
 		destroyPasses(allPasses);
 
@@ -910,12 +920,25 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		GbufferPrograms.runPhaseChangeNotifier();
 	}
 
+	@Override
+	public void onBindTexture(int id) {
+		if (shouldBindPBR && isRenderingWorld) {
+			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
+			RenderSystem.activeTexture(TextureUnit.NORMALS.getUnitId());
+			RenderSystem.bindTexture(pbrHolder.normalTexture().getId());
+			RenderSystem.activeTexture(TextureUnit.SPECULAR.getUnitId());
+			RenderSystem.bindTexture(pbrHolder.specularTexture().getId());
+		}
+	}
+
 	private boolean isRenderingShadow = false;
 
+	@Override
 	public void beginShadowRender() {
 		isRenderingShadow = true;
 	}
 
+	@Override
 	public void endShadowRender() {
 		isRenderingShadow = false;
 	}

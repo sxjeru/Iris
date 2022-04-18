@@ -20,6 +20,7 @@ import net.coderbot.iris.shaderpack.option.OptionSet;
 import net.coderbot.iris.shaderpack.option.Profile;
 import net.coderbot.iris.shaderpack.option.values.MutableOptionValues;
 import net.coderbot.iris.shaderpack.option.values.OptionValues;
+import net.coderbot.iris.texture.pbr.PBRTextureManager;
 import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
@@ -185,6 +186,8 @@ public class Iris {
 		}
 
 		setDebug(irisConfig.isDebugEnabled());
+
+		PBRTextureManager.INSTANCE.init();
 
 		// Only load the shader pack when we can access OpenGL
 		loadShaderpack();

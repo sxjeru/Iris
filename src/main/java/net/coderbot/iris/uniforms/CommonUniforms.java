@@ -7,11 +7,14 @@ import net.coderbot.iris.gl.state.StateUpdateNotifiers;
 import net.coderbot.iris.gl.uniform.DynamicUniformHolder;
 import net.coderbot.iris.gl.uniform.UniformHolder;
 import net.coderbot.iris.layer.GbufferPrograms;
+import net.coderbot.iris.mixin.GlStateManagerAccessor;
 import net.coderbot.iris.mixin.statelisteners.BooleanStateAccessor;
 import net.coderbot.iris.pipeline.newshader.FogMode;
 import net.coderbot.iris.samplers.TextureAtlasTracker;
 import net.coderbot.iris.shaderpack.IdMap;
 import net.coderbot.iris.shaderpack.PackDirectives;
+import net.coderbot.iris.texture.AtlasInfoGatherer;
+import net.coderbot.iris.texture.TextureTracker;
 import net.coderbot.iris.uniforms.transforms.SmoothedFloat;
 import net.coderbot.iris.uniforms.transforms.SmoothedVec2f;
 import net.coderbot.iris.vendored.joml.Vector2f;
@@ -22,6 +25,8 @@ import net.coderbot.iris.vendored.joml.Vector4i;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -68,10 +73,17 @@ public final class CommonUniforms {
 		uniforms.uniform2i("atlasSize", () -> {
 			int glId = RenderSystem.getShaderTexture(0);
 
-			Vec2 atlasSize = TextureAtlasTracker.INSTANCE.getAtlasSize(glId);
+			AbstractTexture texture = TextureTracker.INSTANCE.getTexture(glId);
+			if (texture instanceof TextureAtlas) {
+				TextureAtlas atlas = (TextureAtlas) texture;
+				int width = AtlasInfoGatherer.getWidth(atlas);
+				int height = AtlasInfoGatherer.getHeight(atlas);
 
-			return new Vector2i((int) atlasSize.x, (int) atlasSize.y);
-		}, StateUpdateNotifiers.atlasTextureNotifier);
+				return new Vector2i(width, height);
+			}
+
+			return new Vector2i(0, 0);
+		}, StateUpdateNotifiers.bindTextureNotifier);
 
 		uniforms.uniform4i("blendFunc", () -> {
 			GlStateManager.BlendState blend = net.coderbot.iris.mixin.GlStateManagerAccessor.getBLEND();

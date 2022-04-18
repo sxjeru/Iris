@@ -1,6 +1,7 @@
 package net.coderbot.iris.pipeline;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+
 import net.coderbot.iris.block_rendering.BlockRenderingSettings;
 import net.coderbot.iris.layer.GbufferProgram;
 import net.coderbot.iris.mixin.LevelRendererAccessor;
@@ -47,6 +48,11 @@ public class FixedFunctionWorldRenderingPipeline implements WorldRenderingPipeli
 
 	@Override
 	public void setPhase(WorldRenderingPhase phase) {
+
+	}
+
+	@Override
+	public void onBindTexture(int id) {
 
 	}
 

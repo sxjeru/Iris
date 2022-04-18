@@ -1,11 +1,16 @@
 package net.coderbot.iris.pipeline;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.IntSupplier;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.rendertarget.NativeImageBackedCustomTexture;
 import net.coderbot.iris.rendertarget.NativeImageBackedNoiseTexture;
-import net.coderbot.iris.rendertarget.NativeImageBackedSingleColorTexture;
 import net.coderbot.iris.shaderpack.PackDirectives;
 import net.coderbot.iris.shaderpack.texture.CustomTextureData;
 import net.coderbot.iris.shaderpack.texture.TextureStage;
@@ -16,21 +21,14 @@ import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.IntSupplier;
-
 public class CustomTextureManager {
 	private final Object2ObjectMap<TextureStage, Object2ObjectMap<String, IntSupplier>> customTextureIdMap = new Object2ObjectOpenHashMap<>();
 	private final IntSupplier noise;
-	private final NativeImageBackedSingleColorTexture normals;
-	private final NativeImageBackedSingleColorTexture specular;
 
 	/**
 	 * List of all OpenGL texture objects owned by this CustomTextureManager that need to be deleted in order to avoid
 	 * leaks.
+	 * Make sure any textures added to this list call releaseId from the close method.
 	 */
 	private final List<AbstractTexture> ownedTextures = new ArrayList<>();
 
@@ -68,13 +66,6 @@ public class CustomTextureManager {
 
 			return texture::getId;
 		});
-
-		// Create some placeholder PBR textures for now
-		normals = new NativeImageBackedSingleColorTexture(127, 127, 255, 255);
-		specular = new NativeImageBackedSingleColorTexture(0, 0, 0, 0);
-
-		ownedTextures.add(normals);
-		ownedTextures.add(specular);
 	}
 
 	private IntSupplier createCustomTexture(CustomTextureData textureData) throws IOException, ResourceLocationException {
@@ -113,14 +104,6 @@ public class CustomTextureManager {
 
 	public IntSupplier getNoiseTexture() {
 		return noise;
-	}
-
-	public NativeImageBackedSingleColorTexture getNormals() {
-		return normals;
-	}
-
-	public NativeImageBackedSingleColorTexture getSpecular() {
-		return specular;
 	}
 
 	public void destroy() {

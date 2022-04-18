@@ -17,8 +17,9 @@ public interface WorldRenderingPipeline {
 	WorldRenderingPhase getPhase();
 
 	void setPhase(WorldRenderingPhase phase);
+	void onBindTexture(int id);
 
-    void beginShadowRender();
+	void beginShadowRender();
 	void endShadowRender();
 
 	void beginHand();

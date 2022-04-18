@@ -44,7 +44,13 @@ public class HorizonRenderer {
 
 	private VertexBuffer buffer;
 
-	public HorizonRenderer() {
+	public static final HorizonRenderer INSTANCE = new HorizonRenderer();
+
+	private HorizonRenderer() {
+		rebuildBuffer();
+	}
+
+	public void rebuildBuffer() {
 		buffer = new VertexBuffer();
 
 		BufferBuilder builder = Tesselator.getInstance().getBuilder();
