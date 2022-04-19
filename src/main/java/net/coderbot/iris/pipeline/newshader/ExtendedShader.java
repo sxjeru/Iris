@@ -126,6 +126,10 @@ public class ExtendedShader extends ShaderInstance implements SamplerHolder, Ima
 		} else if (name.equals("Sampler2") && !isFullbright) {
 			// TODO: Should we be providing the lightmap texture even if it's fullbright? Doing this before broke beacon beams on many packs.
 			name = "lightmap";
+		} else if (name.equals("Sampler3")) {
+			name = "normals";
+		} else if (name.equals("Sampler4")) {
+			name = "specular";
 		} else if (name.startsWith("Sampler")) {
 			// We only care about the texture, lightmap, and overlay for now from vanilla.
 			// All other samplers will be coming from Iris.

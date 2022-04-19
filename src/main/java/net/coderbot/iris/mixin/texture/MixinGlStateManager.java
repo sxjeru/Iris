@@ -12,7 +12,8 @@ import net.coderbot.iris.texture.TextureTracker;
 
 @Mixin(GlStateManager.class)
 public class MixinGlStateManager {
-	@Inject(method = "_bindTexture(I)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glBindTexture(II)V", shift = Shift.AFTER, remap = false))
+	// This isn't needed on 1.17+.
+	//@Inject(method = "_bindTexture(I)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glBindTexture(II)V", shift = Shift.AFTER, remap = false))
 	private static void iris$onBindTexture(int id, CallbackInfo ci) {
 		TextureTracker.INSTANCE.onBindTexture(id);
 	}
