@@ -3,6 +3,8 @@ package net.coderbot.iris.texture.pbr.loader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import net.coderbot.iris.mixin.texture.FrameInfoAccessor;
+import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAnimationAccessor;
 import org.jetbrains.annotations.Nullable;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -140,31 +142,29 @@ public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
 	}
 
 	protected void syncAnimation(TextureAtlasSprite source, TextureAtlasSprite target) {
-		if (!source.isAnimation() || !target.isAnimation()) {
+		if (source.getAnimationTicker() == null || target.getAnimationTicker() == null) {
 			return;
 		}
 
-		TextureAtlasSpriteAccessor sourceAccessor = ((TextureAtlasSpriteAccessor) source);
-		AnimationMetadataSection sourceMetadata = sourceAccessor.getMetadata();
+		TextureAtlasSpriteAnimationAccessor sourceAccessor = ((TextureAtlasSpriteAnimationAccessor) source.getAnimationTicker());
 
 		int ticks = 0;
 		for (int f = 0; f < sourceAccessor.getFrame(); f++) {
-			ticks += sourceMetadata.getFrameTime(f);
+			ticks += ((FrameInfoAccessor) sourceAccessor.getFrames().get(f)).getTime();
 		}
 
-		TextureAtlasSpriteAccessor targetAccessor = ((TextureAtlasSpriteAccessor) target);
-		AnimationMetadataSection targetMetadata = targetAccessor.getMetadata();
+		TextureAtlasSpriteAnimationAccessor targetAccessor = ((TextureAtlasSpriteAnimationAccessor) target.getAnimationTicker());
 
 		int cycleTime = 0;
-		int frameCount = targetMetadata.getFrameCount();
+		int frameCount = targetAccessor.getFrames().size();
 		for (int f = 0; f < frameCount; f++) {
-			cycleTime += targetMetadata.getFrameTime(f);
+			cycleTime += ((FrameInfoAccessor) targetAccessor.getFrames().get(f)).getTime();
 		}
 		ticks %= cycleTime;
 
 		int targetFrame = 0;
 		while (true) {
-			int time = targetMetadata.getFrameTime(targetFrame);
+			int time = ((FrameInfoAccessor) targetAccessor.getFrames().get(targetFrame)).getTime();
 			if (ticks >= time) {
 				targetFrame++;
 				ticks -= time;

@@ -12,9 +12,6 @@ import net.minecraft.client.resources.metadata.animation.AnimationMetadataSectio
 
 @Mixin(TextureAtlasSprite.class)
 public interface TextureAtlasSpriteAccessor {
-	@Accessor("metadata")
-	AnimationMetadataSection getMetadata();
-
 	@Accessor("mainImage")
 	NativeImage[] getMainImage();
 
@@ -24,23 +21,9 @@ public interface TextureAtlasSpriteAccessor {
 	@Accessor("y")
 	int getY();
 
-	@Accessor("frame")
-	int getFrame();
-
-	@Accessor("frame")
-	void setFrame(int frame);
-
-	@Accessor("subFrame")
-    int getSubFrame();
-
-	@Accessor("subFrame")
-    void setSubFrame(int subFrame);
-
 	@Invoker("<init>")
 	static TextureAtlasSprite callInit(TextureAtlas atlas, TextureAtlasSprite.Info info, int mipLevel, int atlasWidth, int atlasHeight, int x, int y, NativeImage image) {
 		return null;
 	}
 
-	@Invoker("upload(I)V")
-	void callUpload(int frameIndex);
 }

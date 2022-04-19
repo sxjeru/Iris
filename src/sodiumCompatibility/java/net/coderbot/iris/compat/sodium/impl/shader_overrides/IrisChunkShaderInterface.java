@@ -57,6 +57,10 @@ public class IrisChunkShaderInterface {
 		RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
 		RenderSystem.activeTexture(TextureUnit.LIGHTMAP.getUnitId());
 		RenderSystem.bindTexture(RenderSystem.getShaderTexture(2));
+		RenderSystem.activeTexture(TextureUnit.NORMALS.getUnitId());
+		RenderSystem.bindTexture(RenderSystem.getShaderTexture(3));
+		RenderSystem.activeTexture(TextureUnit.SPECULAR.getUnitId());
+		RenderSystem.bindTexture(RenderSystem.getShaderTexture(4));
 
 		if (blendModeOverride != null) {
 			blendModeOverride.apply();

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAnimationAccessor;
 import org.jetbrains.annotations.Nullable;
 
 import com.mojang.blaze3d.platform.TextureUtil;
@@ -45,7 +46,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 
 	public void addSprite(TextureAtlasSprite sprite) {
 		sprites.put(sprite.getName(), sprite);
-		if (sprite.isAnimation()) {
+		if (sprite.getAnimationTicker() != null) {
 			animatedSprites.add(sprite);
 		}
 	}
@@ -87,15 +88,13 @@ public class PBRAtlasTexture extends AbstractTexture {
 	}
 
 	protected void uploadSprite(TextureAtlasSprite sprite) {
-		if (sprite.isAnimation()) {
-			TextureAtlasSpriteAccessor accessor = (TextureAtlasSpriteAccessor) sprite;
-			AnimationMetadataSection metadata = accessor.getMetadata();
+		if (sprite.getAnimationTicker() != null) {
+			TextureAtlasSpriteAnimationAccessor accessor = (TextureAtlasSpriteAnimationAccessor) sprite.getAnimationTicker();
 
-			int frameCount = sprite.getFrameCount();
+			int frameCount = accessor.getFrames().size();
 			for (int frame = accessor.getFrame(); frame >= 0; frame--) {
-				int frameIndex = metadata.getFrameIndex(frame);
-				if (frameIndex >= 0 && frameIndex < frameCount) {
-					accessor.callUpload(frameIndex);
+				if (frame >= 0 && frame < frameCount) {
+					accessor.invokeUploadFrame(frame);
 					return;
 				}
 			}
@@ -107,7 +106,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 	public void cycleAnimationFrames() {
 		bind();
 		for (TextureAtlasSprite sprite : animatedSprites) {
-			sprite.cycleFrames();
+			sprite.getAnimationTicker().tick();
 		}
 	}
 

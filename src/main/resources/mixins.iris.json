@@ -31,7 +31,6 @@
     "MixinOptions_Entrypoint",
     "MixinRenderSystem",
     "MixinShaderInstance",
-    "MixinTextureAtlas",
     "MixinTitleScreen",
     "MixinClientLanguage",
     "MixinMaxFpsCrashFix",
@@ -69,6 +68,8 @@
     "texture.SimpleTextureAccessor",
     "texture.TextureAtlasAccessor",
     "texture.TextureAtlasSpriteAccessor",
+    "texture.TextureAtlasSpriteAnimationAccessor",
+    "texture.FrameInfoAccessor",
     "statelisteners.MixinRenderSystem",
     "DimensionTypeAccessor"
   ],

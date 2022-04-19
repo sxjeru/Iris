@@ -51,6 +51,10 @@ public class HorizonRenderer {
 	}
 
 	public void rebuildBuffer() {
+		if (buffer != null) {
+			buffer.close();
+		}
+
 		buffer = new VertexBuffer();
 
 		BufferBuilder builder = Tesselator.getInstance().getBuilder();
@@ -141,10 +145,6 @@ public class HorizonRenderer {
 
 	private int getRenderDistanceInBlocks() {
 		return Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
-	}
-
-	public void close() {
-		buffer.close();
 	}
 
 	public void renderHorizon(Matrix4f modelView, Matrix4f projection, ShaderInstance shader) {

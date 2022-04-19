@@ -50,9 +50,6 @@ public class MixinLevelRenderer {
 	private Minecraft minecraft;
 
 	@Unique
-	private HorizonRenderer horizonRenderer = new HorizonRenderer();
-
-	@Unique
 	private int previousViewDistance;
 
 	@Unique
@@ -78,7 +75,7 @@ public class MixinLevelRenderer {
 		SystemTimeUniforms.TIMER.beginFrame(startTime);
 
 		if (previousViewDistance != minecraft.options.getEffectiveRenderDistance()) {
-			horizonRenderer.rebuildBuffer();
+			HorizonRenderer.INSTANCE.rebuildBuffer();
 			previousViewDistance = minecraft.options.getEffectiveRenderDistance();
 		}
 

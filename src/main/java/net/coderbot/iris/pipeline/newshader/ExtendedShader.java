@@ -148,7 +148,9 @@ public class ExtendedShader extends ShaderInstance implements SamplerHolder, Ima
 	// TODO: This is kind of a mess. The interface might need some cleanup here.
 	@Override
 	public void addExternalSampler(int textureUnit, String... names) {
-		throw new UnsupportedOperationException("not yet implemented");
+		for (String name : names) {
+			addIrisSampler(name, textureUnit);
+		}
 	}
 
 	@Override

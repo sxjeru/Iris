@@ -42,6 +42,9 @@ import net.coderbot.iris.shaderpack.loading.ProgramId;
 import net.coderbot.iris.shaderpack.texture.TextureStage;
 import net.coderbot.iris.shadows.EmptyShadowMapRenderer;
 import net.coderbot.iris.shadows.ShadowMapRenderer;
+import net.coderbot.iris.texture.pbr.PBRTextureHolder;
+import net.coderbot.iris.texture.pbr.PBRTextureManager;
+import net.coderbot.iris.texunits.TextureUnit;
 import net.coderbot.iris.uniforms.CapturedRenderingState;
 import net.coderbot.iris.uniforms.FrameUpdateNotifier;
 import net.coderbot.iris.vendored.joml.Vector3d;
@@ -105,6 +108,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	private final OptionalInt forcedShadowRenderDistanceChunks;
 	private boolean destroyed = false;
 	private boolean isRenderingWorld;
+	private boolean shouldBindPBR;
 
 	private Runnable createShadowMapRenderer;
 	private ShadowMapRenderer shadowMapRenderer;
@@ -208,9 +212,13 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 			ProgramSamplers.CustomTextureSamplerInterceptor customTextureSamplerInterceptor = ProgramSamplers.customTextureSamplerInterceptor(builder, customTextureManager.getCustomTextureIdMap().getOrDefault(TextureStage.GBUFFERS_AND_SHADOW, Object2ObjectMaps.emptyMap()));
 
 			IrisSamplers.addRenderTargetSamplers(customTextureSamplerInterceptor, flipped, renderTargets, false);
-			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor, customTextureManager.getNormals(), customTextureManager.getSpecular());
+			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor);
 			IrisSamplers.addWorldDepthSamplers(customTextureSamplerInterceptor, renderTargets);
 			IrisSamplers.addNoiseSampler(customTextureSamplerInterceptor, customTextureManager.getNoiseTexture());
+
+			if (!shouldBindPBR) {
+				shouldBindPBR = IrisSamplers.hasPBRSamplers(customTextureSamplerInterceptor);
+			}
 
 			if (IrisSamplers.hasShadowSamplers(customTextureSamplerInterceptor)) {
 				createShadowMapRenderer.run();
@@ -239,7 +247,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 			ProgramSamplers.CustomTextureSamplerInterceptor customTextureSamplerInterceptor = ProgramSamplers.customTextureSamplerInterceptor(builder, customTextureManager.getCustomTextureIdMap().getOrDefault(TextureStage.GBUFFERS_AND_SHADOW, Object2ObjectMaps.emptyMap()));
 
 			IrisSamplers.addRenderTargetSamplers(customTextureSamplerInterceptor, () -> flippedBeforeShadow, renderTargets, false);
-			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor, customTextureManager.getNormals(), customTextureManager.getSpecular());
+			IrisSamplers.addLevelSamplers(customTextureSamplerInterceptor);
 			IrisSamplers.addNoiseSampler(customTextureSamplerInterceptor, customTextureManager.getNoiseTexture());
 
 			// Only initialize these samplers if the shadow map renderer exists.
@@ -429,9 +437,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		IrisSamplers.addRenderTargetSamplers(samplerHolder, flipped, renderTargets, false);
 		IrisImages.addRenderTargetImages(extendedShader, flipped, renderTargets);
 
-		// TODO: IrisSamplers.addLevelSamplers(builder, normals, specular);
-		samplerHolder.addDynamicSampler(customTextureManager.getNormals()::getId, "normals");
-		samplerHolder.addDynamicSampler(customTextureManager.getSpecular()::getId, "specular");
+		IrisSamplers.addLevelSamplers(samplerHolder);
 
 		IrisSamplers.addWorldDepthSamplers(samplerHolder, this.renderTargets);
 		IrisSamplers.addNoiseSampler(samplerHolder, this.customTextureManager.getNoiseTexture());
@@ -457,6 +463,15 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	@Override
 	public void setPhase(WorldRenderingPhase phase) {
 		this.phase = phase;
+	}
+
+	@Override
+	public void onBindTexture(int id) {
+		if (shouldBindPBR && isRenderingWorld) {
+			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
+			RenderSystem.setShaderTexture(TextureUnit.NORMALS.getSamplerId(), pbrHolder.normalTexture().getId());
+			RenderSystem.setShaderTexture(TextureUnit.SPECULAR.getSamplerId(), pbrHolder.specularTexture().getId());
+		}
 	}
 
 	@Override

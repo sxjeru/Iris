@@ -65,6 +65,25 @@ public class TextureTracker {
 		}
 	}
 
+	public void onSetShaderTexture(int unit, int id) {
+		if (lockBindCallback) {
+			return;
+		}
+		if (unit == 0) {
+			lockBindCallback = true;
+			if (bindTextureListener != null) {
+				bindTextureListener.run();
+			}
+			WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
+			if (pipeline != null) {
+				pipeline.onBindTexture(id);
+			}
+			// Reset state
+			RenderSystem.setShaderTexture(0, id);
+			lockBindCallback = false;
+		}
+	}
+
 	public void onDeleteTexture(int id) {
 		if (id < textures.size()) {
 			textures.set(id, null);
