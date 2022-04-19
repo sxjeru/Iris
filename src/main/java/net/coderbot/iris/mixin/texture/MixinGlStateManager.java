@@ -18,12 +18,12 @@ public class MixinGlStateManager {
 		TextureTracker.INSTANCE.onBindTexture(id);
 	}
 
-	@Inject(method = "_deleteTexture(I)V", at = @At("TAIL"))
+	@Inject(method = "_deleteTexture(I)V", at = @At("TAIL"), remap = false)
 	private static void iris$onDeleteTexture(int id, CallbackInfo ci) {
 		TextureTracker.INSTANCE.onDeleteTexture(id);
 	}
 
-	@Inject(method = "_deleteTextures([I)V", at = @At("TAIL"))
+	@Inject(method = "_deleteTextures([I)V", at = @At("TAIL"), remap = false)
 	private static void iris$onDeleteTextures(int[] ids, CallbackInfo ci) {
 		for (int id : ids) {
 			TextureTracker.INSTANCE.onDeleteTexture(id);
