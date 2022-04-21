@@ -1,24 +1,22 @@
 package net.coderbot.iris.texture.pbr.loader;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-import net.coderbot.iris.mixin.texture.FrameInfoAccessor;
-import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAnimationAccessor;
-import org.jetbrains.annotations.Nullable;
-
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.datafixers.util.Pair;
-
 import net.coderbot.iris.Iris;
+import net.coderbot.iris.mixin.texture.AnimationMetadataSectionAccessor;
 import net.coderbot.iris.mixin.texture.TextureAtlasAccessor;
 import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAccessor;
 import net.coderbot.iris.texture.AtlasInfoGatherer;
+import net.coderbot.iris.texture.format.TextureFormat;
+import net.coderbot.iris.texture.format.TextureFormatLoader;
+import net.coderbot.iris.texture.mipmap.ChannelMipmapGenerator;
+import net.coderbot.iris.texture.mipmap.CustomMipmapGenerator;
+import net.coderbot.iris.texture.mipmap.LinearBlendFunction;
 import net.coderbot.iris.texture.pbr.PBRAtlasTexture;
 import net.coderbot.iris.texture.pbr.PBRSpriteHolder;
 import net.coderbot.iris.texture.pbr.PBRType;
 import net.coderbot.iris.texture.pbr.TextureAtlasSpriteExtension;
-import net.coderbot.iris.texture.util.ImageScalingUtil;
+import net.coderbot.iris.texture.util.ImageManipulationUtil;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -26,8 +24,14 @@ import net.minecraft.client.resources.metadata.animation.AnimationMetadataSectio
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
+	public static final ChannelMipmapGenerator LINEAR_MIPMAP_GENERATOR = new ChannelMipmapGenerator(LinearBlendFunction.INSTANCE, LinearBlendFunction.INSTANCE, LinearBlendFunction.INSTANCE, LinearBlendFunction.INSTANCE);
+
 	@Override
 	public void load(TextureAtlas atlas, ResourceManager resourceManager, PBRTextureConsumer pbrTextureConsumer) {
 		int atlasWidth = AtlasInfoGatherer.getWidth(atlas);
@@ -89,27 +93,52 @@ public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
 
 			try {
 				NativeImage nativeImage = NativeImage.read(resource.getInputStream());
-				if (nativeImage.getWidth() != sprite.getWidth()) {
-					int newWidth = sprite.getWidth();
-					int newHeight = nativeImage.getHeight() * newWidth / nativeImage.getWidth();
-					NativeImage scaledImage;
-					if (newWidth < nativeImage.getWidth() || newWidth % nativeImage.getWidth() != 0) {
-						scaledImage = ImageScalingUtil.scaleBilinear(nativeImage, newWidth, newHeight);
-					} else {
-						scaledImage = ImageScalingUtil.scaleNearestNeighbor(nativeImage, newWidth, newHeight);
-					}
-					nativeImage.close();
-					nativeImage = scaledImage;
-				}
-
 				AnimationMetadataSection animationMetadata = resource.getMetadata(AnimationMetadataSection.SERIALIZER);
 				if (animationMetadata == null) {
 					animationMetadata = AnimationMetadataSection.EMPTY;
 				}
 
-				Pair<Integer, Integer> size = animationMetadata.getFrameSize(nativeImage.getWidth(), nativeImage.getHeight());
+				Pair<Integer, Integer> frameSize = animationMetadata.getFrameSize(nativeImage.getWidth(), nativeImage.getHeight());
+				int frameWidth = frameSize.getFirst();
+				int frameHeight = frameSize.getSecond();
+				int targetFrameWidth = sprite.getWidth();
+				int targetFrameHeight = sprite.getHeight();
+				if (frameWidth != targetFrameWidth || frameHeight != targetFrameHeight) {
+					int imageWidth = nativeImage.getWidth();
+					int imageHeight = nativeImage.getHeight();
+
+					// We can assume the following is always true as a result of getFrameSize's check:
+					// imageWidth % frameWidth == 0 && imageHeight % frameHeight == 0
+					int targetImageWidth = imageWidth / frameWidth * targetFrameWidth;
+					int targetImageHeight = imageHeight / frameHeight * targetFrameHeight;
+
+					NativeImage scaledImage;
+					if (targetImageWidth % imageWidth == 0 && targetImageHeight % imageHeight == 0) {
+						scaledImage = ImageManipulationUtil.scaleNearestNeighbor(nativeImage, targetImageWidth, targetImageHeight);
+					} else {
+						scaledImage = ImageManipulationUtil.scaleBilinear(nativeImage, targetImageWidth, targetImageHeight);
+					}
+					nativeImage.close();
+					nativeImage = scaledImage;
+
+					frameWidth = targetFrameWidth;
+					frameHeight = targetFrameHeight;
+
+					if (animationMetadata != AnimationMetadataSection.EMPTY) {
+						AnimationMetadataSectionAccessor animationAccessor = (AnimationMetadataSectionAccessor) animationMetadata;
+						int internalFrameWidth = animationAccessor.getFrameWidth();
+						int internalFrameHeight = animationAccessor.getFrameHeight();
+						if (internalFrameWidth != -1) {
+							animationAccessor.setFrameWidth(frameWidth);
+						}
+						if (internalFrameHeight != -1) {
+							animationAccessor.setFrameHeight(frameHeight);
+						}
+					}
+				}
+
 				ResourceLocation pbrSpriteName = new ResourceLocation(spriteName.getNamespace(), spriteName.getPath() + pbrType.getSuffix());
-				TextureAtlasSprite.Info pbrSpriteInfo = new TextureAtlasSprite.Info(pbrSpriteName, size.getFirst(), size.getSecond(), animationMetadata);
+				TextureAtlasSprite.Info pbrSpriteInfo = new TextureAtlasSprite.Info(pbrSpriteName, frameWidth, frameHeight, animationMetadata);
 
 				int x = ((TextureAtlasSpriteAccessor) sprite).getX();
 				int y = ((TextureAtlasSpriteAccessor) sprite).getY();
@@ -175,5 +204,17 @@ public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
 
 		targetAccessor.setFrame(targetFrame);
 		targetAccessor.setSubFrame(ticks + sourceAccessor.getSubFrame());
+	}
+
+	// TODO: actually use this generator for PBR sprites
+	public static CustomMipmapGenerator getMipmapGenerator(PBRType pbrType) {
+		TextureFormat format = TextureFormatLoader.getFormat();
+		if (format != null) {
+			CustomMipmapGenerator generator = format.getMipmapGenerator(pbrType);
+			if (generator != null) {
+				return generator;
+			}
+		}
+		return LINEAR_MIPMAP_GENERATOR;
 	}
 }

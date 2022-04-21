@@ -2,15 +2,15 @@ package net.coderbot.iris.texture.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
-public class ImageScalingUtil {
+public class ImageManipulationUtil {
 	public static NativeImage scaleNearestNeighbor(NativeImage image, int newWidth, int newHeight) {
 		NativeImage scaled = new NativeImage(image.format(), newWidth, newHeight, false);
 		float xScale = (float) newWidth / image.getWidth();
 		float yScale = (float) newHeight / image.getHeight();
 		for (int y = 0; y < newHeight; ++y) {
 			for (int x = 0; x < newWidth; ++x) {
-				float unscaledX = x / xScale;
-				float unscaledY = y / yScale;
+				float unscaledX = (x + 0.5f) / xScale;
+				float unscaledY = (y + 0.5f) / yScale;
 				scaled.setPixelRGBA(x, y, image.getPixelRGBA((int) unscaledX, (int) unscaledY));
 			}
 		}
@@ -23,8 +23,8 @@ public class ImageScalingUtil {
 		float yScale = (float) newHeight / image.getHeight();
 		for (int y = 0; y < newHeight; ++y) {
 			for (int x = 0; x < newWidth; ++x) {
-				float unscaledX = x / xScale;
-				float unscaledY = y / yScale;
+				float unscaledX = (x + 0.5f) / xScale;
+				float unscaledY = (y + 0.5f) / yScale;
 
 				int x1 = Math.round(unscaledX);
 				int y1 = Math.round(unscaledY);
