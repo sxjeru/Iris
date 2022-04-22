@@ -33,7 +33,7 @@ public class MixinTextureAtlasSprite {
 	// can remain minimal. Being less dependent on specific details of Fabric is good, since it means we can be more
 	// cross-platform.
 	@ModifyVariable(method = "<init>", at = @At(value = "FIELD",
-		target = "Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;metadata:Lnet/minecraft/client/resources/metadata/animation/AnimationMetadataSection;"), argsOnly = true)
+		target = "Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;animatedTexture:Lnet/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture;"), argsOnly = true)
 	private NativeImage iris$beforeGenerateMipLevels(NativeImage nativeImage, TextureAtlas arg, TextureAtlasSprite.Info info) {
 		// We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
 		ResourceLocation name = Objects.requireNonNull(info).name();
