@@ -1,15 +1,8 @@
 package net.coderbot.iris.texture.pbr;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAnimationAccessor;
-import org.jetbrains.annotations.Nullable;
-
 import com.mojang.blaze3d.platform.TextureUtil;
-import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAccessor;
+import net.coderbot.iris.mixin.texture.SpriteAnimatedTextureAccessor;
+import net.coderbot.iris.mixin.texture.SpriteFrameInfoAccessor;
 import net.coderbot.iris.texture.util.TextureColorUtil;
 import net.coderbot.iris.texture.util.TextureSavingUtil;
 import net.minecraft.CrashReport;
@@ -18,22 +11,22 @@ import net.minecraft.ReportedException;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.metadata.animation.AnimationMetadataSection;
+import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class PBRAtlasTexture extends AbstractTexture {
 	protected final TextureAtlas atlasTexture;
 	protected final PBRType type;
 	protected final ResourceLocation id;
 	protected final Map<ResourceLocation, TextureAtlasSprite> sprites = new HashMap<>();
-	protected final Set<TextureAtlasSprite> animatedSprites = new HashSet<>();
+	protected final List<Tickable> animationTickers = new ArrayList<>();
 
 	public PBRAtlasTexture(TextureAtlas atlasTexture, PBRType type) {
 		this.atlasTexture = atlasTexture;
@@ -51,8 +44,9 @@ public class PBRAtlasTexture extends AbstractTexture {
 
 	public void addSprite(TextureAtlasSprite sprite) {
 		sprites.put(sprite.getName(), sprite);
-		if (sprite.getAnimationTicker() != null) {
-			animatedSprites.add(sprite);
+		Tickable ticker = sprite.getAnimationTicker();
+		if (ticker != null) {
+			animationTickers.add(ticker);
 		}
 	}
 
@@ -63,7 +57,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 
 	public void clear() {
 		sprites.clear();
-		animatedSprites.clear();
+		animationTickers.clear();
 	}
 
 	public void upload(int atlasWidth, int atlasHeight, int mipLevel) {
@@ -83,7 +77,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 			}
 		}
 
-		if (!animatedSprites.isEmpty()) {
+		if (!animationTickers.isEmpty()) {
 			PBRAtlasHolder pbrHolder = ((TextureAtlasExtension) atlasTexture).getOrCreatePBRHolder();
 			switch (type) {
 			case NORMAL:
@@ -101,16 +95,11 @@ public class PBRAtlasTexture extends AbstractTexture {
 	}
 
 	protected void uploadSprite(TextureAtlasSprite sprite) {
-		if (sprite.getAnimationTicker() != null) {
-			TextureAtlasSpriteAnimationAccessor accessor = (TextureAtlasSpriteAnimationAccessor) sprite.getAnimationTicker();
+		Tickable ticker = sprite.getAnimationTicker();
+		if (ticker instanceof SpriteAnimatedTextureAccessor) {
+			SpriteAnimatedTextureAccessor accessor = (SpriteAnimatedTextureAccessor) ticker;
 
-			int frameCount = accessor.getFrames().size();
-			for (int frame = accessor.getFrame(); frame >= 0; frame--) {
-				if (frame >= 0 && frame < frameCount) {
-					accessor.invokeUploadFrame(frame);
-					return;
-				}
-			}
+			accessor.invokeUploadFrame(((SpriteFrameInfoAccessor) accessor.getFrames().get(accessor.getFrame())).getIndex());
 		}
 
 		sprite.uploadFirstFrame();
@@ -118,8 +107,8 @@ public class PBRAtlasTexture extends AbstractTexture {
 
 	public void cycleAnimationFrames() {
 		bind();
-		for (TextureAtlasSprite sprite : animatedSprites) {
-			sprite.getAnimationTicker().tick();
+		for (Tickable ticker : animationTickers) {
+			ticker.tick();
 		}
 	}
 

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TextureAtlasSprite.class)
 public class MixinTextureAtlasSprite {
 	@Inject(method = "setActive(Z)V", at = @At("TAIL"), remap = false)
-	private void onTailMarkActive(CallbackInfo ci) {
+	private void onTailSetActive(CallbackInfo ci) {
 		PBRSpriteHolder pbrHolder = ((TextureAtlasSpriteExtension) this).getPBRHolder();
 		if (pbrHolder != null) {
 			TextureAtlasSprite normalSprite = pbrHolder.getNormalSprite();

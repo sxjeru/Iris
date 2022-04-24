@@ -2,9 +2,7 @@ package net.coderbot.iris.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.coderbot.iris.Iris;
-import net.coderbot.iris.gl.state.StateUpdateNotifiers;
 import net.coderbot.iris.texture.TextureTracker;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
@@ -16,8 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(RenderSystem.class)
 public class MixinRenderSystem {
-	private static Runnable atlasTextureListener;
-
 	@Inject(method = "initRenderer", at = @At("RETURN"), remap = false)
 	private static void iris$onRendererInit(int debugVerbosity, boolean alwaysFalse, CallbackInfo ci) {
 		Iris.onRenderSystemInit();

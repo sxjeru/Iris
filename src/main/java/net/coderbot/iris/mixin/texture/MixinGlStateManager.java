@@ -4,18 +4,11 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.coderbot.iris.texture.TextureTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GlStateManager.class)
 public class MixinGlStateManager {
-	// This isn't needed on 1.17+.
-	//@Inject(method = "_bindTexture(I)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glBindTexture(II)V", shift = Shift.AFTER, remap = false))
-	private static void iris$onBindTexture(int id, CallbackInfo ci) {
-		TextureTracker.INSTANCE.onBindTexture(id);
-	}
-
 	@Inject(method = "_deleteTexture(I)V", at = @At("TAIL"), remap = false)
 	private static void iris$onDeleteTexture(int id, CallbackInfo ci) {
 		TextureTracker.INSTANCE.onDeleteTexture(id);

@@ -925,7 +925,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	}
 
 	@Override
-	public void onBindTexture(int id) {
+	public void onSetShaderTexture0(int id) {
 		if (shouldBindPBR && isRenderingWorld) {
 			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
 			RenderSystem.activeTexture(TextureUnit.NORMALS.getUnitId());

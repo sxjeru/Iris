@@ -82,7 +82,7 @@ public final class CommonUniforms {
 			}
 
 			return new Vector2i(0, 0);
-		}, StateUpdateNotifiers.bindTextureNotifier);
+		}, StateUpdateNotifiers.setShaderTextureNotifier);
 
 		uniforms.uniform4i("blendFunc", () -> {
 			GlStateManager.BlendState blend = net.coderbot.iris.mixin.GlStateManagerAccessor.getBLEND();
