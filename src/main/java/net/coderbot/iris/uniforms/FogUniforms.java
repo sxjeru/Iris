@@ -50,6 +50,7 @@ public class FogUniforms {
 				StateUpdateNotifiers.fogEndNotifier.setListener(listener);
 			});
 		}
+
 		uniforms
 			// TODO: Update frequency of continuous?
 			.uniform3f(PER_FRAME, "fogColor", () -> {
