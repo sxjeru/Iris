@@ -12,7 +12,6 @@
     "MixinBlockStateBehavior",
     "MixinFogRenderer",
     "MixinDebugScreenOverlay",
-    "MixinTheEndPortalRenderer",
     "MixinEntityRenderDispatcher",
     "MixinGameRenderer",
     "MixinGameRenderer_NightVisionCompat",
@@ -32,6 +31,7 @@
     "MixinRenderSystem",
     "MixinShaderInstance",
     "MixinRenderTarget",
+    "MixinTheEndPortalRenderer"
     "MixinTitleScreen",
     "MixinClientLanguage",
     "MixinMaxFpsCrashFix",

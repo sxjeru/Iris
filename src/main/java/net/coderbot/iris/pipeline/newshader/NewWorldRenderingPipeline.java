@@ -470,8 +470,8 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	public void onBindTexture(int id) {
 		if (shouldBindPBR && isRenderingWorld) {
 			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
-			RenderSystem.setShaderTexture(TextureUnit.NORMALS.getSamplerId(), pbrHolder.normalTexture().getId());
-			RenderSystem.setShaderTexture(TextureUnit.SPECULAR.getSamplerId(), pbrHolder.specularTexture().getId());
+			RenderSystem.setShaderTexture(TextureUnit.NORMALS.getSamplerId(), pbrHolder.getNormalTexture().getId());
+			RenderSystem.setShaderTexture(TextureUnit.SPECULAR.getSamplerId(), pbrHolder.getSpecularTexture().getId());
 		}
 	}
 

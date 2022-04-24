@@ -1,11 +1,13 @@
 package net.coderbot.iris;
 
 import com.google.common.base.Throwables;
+import com.mojang.blaze3d.platform.GlDebug;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import net.coderbot.iris.compat.sodium.SodiumVersionCheck;
 import net.coderbot.iris.config.IrisConfig;
 import net.coderbot.iris.gl.GLDebug;
+import net.coderbot.iris.gl.shader.StandardMacros;
 import net.coderbot.iris.gui.screen.ShaderPackScreen;
 import net.coderbot.iris.pipeline.FixedFunctionWorldRenderingPipeline;
 import net.coderbot.iris.pipeline.PipelineManager;
@@ -342,7 +344,7 @@ public class Iris {
 		resetShaderPackOptions = false;
 
 		try {
-			currentPack = new ShaderPack(shaderPackPath, changedConfigs);
+			currentPack = new ShaderPack(shaderPackPath, changedConfigs, StandardMacros.createDefines());
 
 			MutableOptionValues changedConfigsValues = currentPack.getShaderPackOptions().getOptionValues().mutableCopy();
 
@@ -403,7 +405,8 @@ public class Iris {
 		if (enable) {
 			success = GLDebug.setupDebugMessageCallback();
 		} else {
-			success = GLDebug.disableDebugMessages();
+			GlDebug.enableDebugCallback(Minecraft.getInstance().options.glDebugVerbosity, false);
+			success = 1;
 		}
 
 		logger.info("Debug functionality is " + (enable ? "enabled, logging will be more verbose!" : "disabled."));

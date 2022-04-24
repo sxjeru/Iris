@@ -69,11 +69,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 	public void upload(int atlasWidth, int atlasHeight, int mipLevel) {
 		int glId = getId();
 		TextureUtil.prepareImage(glId, mipLevel, atlasWidth, atlasHeight);
-
-		int defaultValue = type.getDefaultValue();
-		if (defaultValue != 0) {
-			TextureColorUtil.fillWithColor(glId, mipLevel, defaultValue);
-		}
+		TextureColorUtil.fillWithColor(glId, mipLevel, type.getDefaultValue());
 
 		for (TextureAtlasSprite sprite : sprites.values()) {
 			try {
@@ -84,6 +80,18 @@ public class PBRAtlasTexture extends AbstractTexture {
 				crashReportCategory.setDetail("Atlas path", id);
 				crashReportCategory.setDetail("Sprite", sprite);
 				throw new ReportedException(crashReport);
+			}
+		}
+
+		if (!animatedSprites.isEmpty()) {
+			PBRAtlasHolder pbrHolder = ((TextureAtlasExtension) atlasTexture).getOrCreatePBRHolder();
+			switch (type) {
+			case NORMAL:
+				pbrHolder.setNormalAtlas(this);
+				break;
+			case SPECULAR:
+				pbrHolder.setSpecularAtlas(this);
+				break;
 			}
 		}
 
@@ -112,6 +120,21 @@ public class PBRAtlasTexture extends AbstractTexture {
 		bind();
 		for (TextureAtlasSprite sprite : animatedSprites) {
 			sprite.getAnimationTicker().tick();
+		}
+	}
+
+	@Override
+	public void close() {
+		PBRAtlasHolder pbrHolder = ((TextureAtlasExtension) atlasTexture).getPBRHolder();
+		if (pbrHolder != null) {
+			switch (type) {
+			case NORMAL:
+				pbrHolder.setNormalAtlas(null);
+				break;
+			case SPECULAR:
+				pbrHolder.setSpecularAtlas(null);
+				break;
+			}
 		}
 	}
 
