@@ -100,6 +100,7 @@ public class PBRAtlasTexture extends AbstractTexture {
 			SpriteAnimatedTextureAccessor accessor = (SpriteAnimatedTextureAccessor) ticker;
 
 			accessor.invokeUploadFrame(((SpriteFrameInfoAccessor) accessor.getFrames().get(accessor.getFrame())).getIndex());
+			return;
 		}
 
 		sprite.uploadFirstFrame();
