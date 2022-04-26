@@ -71,20 +71,15 @@ public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
 			}
 		}
 
+		TextureFormat textureFormat = TextureFormatLoader.getFormat();
 		if (normalAtlas != null) {
-			try {
-				normalAtlas.upload(atlasWidth, atlasHeight, mipLevel);
+			if (uploadAtlas(normalAtlas, atlasWidth, atlasHeight, mipLevel, textureFormat)) {
 				pbrTextureConsumer.acceptNormalTexture(normalAtlas);
-			} catch (Exception e) {
-				//
 			}
 		}
 		if (specularAtlas != null) {
-			try {
-				specularAtlas.upload(atlasWidth, atlasHeight, mipLevel);
+			if (uploadAtlas(specularAtlas, atlasWidth, atlasHeight, mipLevel, textureFormat)) {
 				pbrTextureConsumer.acceptSpecularTexture(specularAtlas);
-			} catch (Exception e) {
-				//
 			}
 		}
 	}
@@ -215,6 +210,18 @@ public class AtlasPBRLoader implements PBRTextureLoader<TextureAtlas> {
 
 		targetAccessor.setFrame(targetFrame);
 		targetAccessor.setSubFrame(ticks + sourceAccessor.getSubFrame());
+	}
+
+	protected boolean uploadAtlas(PBRAtlasTexture atlas, int atlasWidth, int atlasHeight, int mipLevel, @Nullable TextureFormat textureFormat) {
+		try {
+			atlas.upload(atlasWidth, atlasHeight, mipLevel);
+		} catch (Exception e) {
+			return false;
+		}
+		if (textureFormat != null) {
+			textureFormat.setupTextureParameters(atlas.getType(), atlas);
+		}
+		return true;
 	}
 
 	protected static class PBRTextureAtlasSpriteInfo extends TextureAtlasSprite.Info {

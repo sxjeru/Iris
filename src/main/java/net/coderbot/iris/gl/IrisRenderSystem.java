@@ -118,6 +118,11 @@ public class IrisRenderSystem {
 		GL32C.glDetachShader(program, shader);
 	}
 
+	public static int getTexParameteri(int target, int pname) {
+		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
+		return GL30C.glGetTexParameteri(target, pname);
+	}
+
 	public static void bindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format) {
 		RenderSystem.assertOnRenderThreadOrInit();
 		if (GL.getCapabilities().OpenGL42) {
