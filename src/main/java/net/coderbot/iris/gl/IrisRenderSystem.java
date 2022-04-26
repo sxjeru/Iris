@@ -18,6 +18,16 @@ import java.nio.IntBuffer;
 public class IrisRenderSystem {
 	private static Matrix4f backupProjection;
 
+	public static void getIntegerv(int pname, int[] params) {
+		RenderSystem.assertOnRenderThreadOrInit();
+		GL32C.glGetIntegerv(pname, params);
+	}
+
+	public static void getFloatv(int pname, float[] params) {
+		RenderSystem.assertOnRenderThreadOrInit();
+		GL32C.glGetFloatv(pname, params);
+	}
+
 	public static void generateMipmaps(int mipmapTarget) {
 		RenderSystem.assertOnRenderThreadOrInit();
 		GL32C.glGenerateMipmap(mipmapTarget);
@@ -119,8 +129,8 @@ public class IrisRenderSystem {
 	}
 
 	public static int getTexParameteri(int target, int pname) {
-		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
-		return GL30C.glGetTexParameteri(target, pname);
+		RenderSystem.assertOnRenderThreadOrInit();
+		return GL32C.glGetTexParameteri(target, pname);
 	}
 
 	public static void bindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format) {
