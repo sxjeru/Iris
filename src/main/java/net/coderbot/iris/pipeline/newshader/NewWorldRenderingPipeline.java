@@ -163,9 +163,9 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		createShadowMapRenderer = () -> {
 			shadowMapRenderer = new ShadowRenderer(this, programSet,
 					programSet.getPackDirectives(), renderTargets);
-			createShadowMapRenderer = () -> {
-			};
+			createShadowMapRenderer = () -> {};
 		};
+
 
 		BufferFlipper flipper = new BufferFlipper();
 
@@ -394,7 +394,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	}
 
 	private ShaderInstance createFallbackShadowShader(String name, ShaderKey key) throws IOException {
-		GlFramebuffer framebuffer = ((ShadowRenderer) this.shadowMapRenderer).getFramebuffer();
+		GlFramebuffer framebuffer = this.shadowMapRenderer.getRenderTargets().getFramebuffer();
 
 		FallbackShader shader = NewShaderTests.createFallback(name, framebuffer, framebuffer,
 				key.getAlphaTest(), key.getVertexFormat(), BlendModeOverride.OFF, this, key.getFogMode(),
@@ -407,7 +407,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 	private ShaderInstance createShadowShader(String name, ProgramSource source, AlphaTest fallbackAlpha,
 											  VertexFormat vertexFormat, boolean isBeacon, boolean isFullbright) throws IOException {
-		GlFramebuffer framebuffer = ((ShadowRenderer) this.shadowMapRenderer).getFramebuffer();
+		GlFramebuffer framebuffer = this.shadowMapRenderer.getRenderTargets().getFramebuffer();
 
 		ExtendedShader extendedShader = NewShaderTests.create(name, source, framebuffer, framebuffer, baseline,
 				fallbackAlpha, vertexFormat, updateNotifier, this, FogMode.ENABLED, isBeacon, isFullbright);
@@ -481,7 +481,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		updateNotifier.onNewFrame();
 
 		RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
-		renderTargets.resizeIfNeeded(((Blaze3dRenderTargetExt) main).iris$isDepthBufferDirty(), main.width, main.height);
+		renderTargets.resizeIfNeeded(((Blaze3dRenderTargetExt) main).iris$isDepthBufferDirty(), main.getDepthTextureId(), main.width, main.height);
 		((Blaze3dRenderTargetExt) main).iris$clearDepthBufferDirtyFlag();
 
 		final ImmutableList<ClearPass> passes;
@@ -574,6 +574,8 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		GlStateManager._bindTexture(renderTargets.getDepthTextureNoTranslucents().getTextureId());
 		IrisRenderSystem.copyTexImage2D(GL20C.GL_TEXTURE_2D, 0, GL20C.GL_DEPTH_COMPONENT, 0, 0, renderTargets.getCurrentWidth(), renderTargets.getCurrentHeight(), 0);
 		GlStateManager._bindTexture(0);
+
+		centerDepthSampler.updateSample();
 
 		deferredRenderer.renderAll();
 

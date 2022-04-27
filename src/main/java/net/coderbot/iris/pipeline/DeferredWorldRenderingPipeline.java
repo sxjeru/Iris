@@ -206,7 +206,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 		createShadowMapRenderer = () -> {
 			shadowMapRenderer = new ShadowRenderer((CoreWorldRenderingPipeline) this, programs,
-					programs.getPackDirectives(), renderTargets);
+				programs.getPackDirectives(), renderTargets);
 			createShadowMapRenderer = () -> {};
 		};
 
@@ -763,7 +763,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
 		Blaze3dRenderTargetExt mainExt = (Blaze3dRenderTargetExt) main;
 
-		renderTargets.resizeIfNeeded(mainExt.iris$isDepthBufferDirty(), main.width, main.height);
+		renderTargets.resizeIfNeeded(mainExt.iris$isDepthBufferDirty(), main.getDepthTextureId(), main.width, main.height);
 
 		mainExt.iris$clearDepthBufferDirtyFlag();
 
