@@ -1,5 +1,6 @@
 package net.coderbot.iris.texture;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gl.state.StateUpdateNotifiers;
@@ -60,7 +61,7 @@ public class TextureTracker {
 	public void onDeleteTexture(int id) {
 		if (id < textures.size()) {
 			textures.set(id, null);
-			PBRTextureManager.INSTANCE.onDeleteTexture(id);
 		}
+		PBRTextureManager.INSTANCE.onDeleteTexture(id);
 	}
 }
