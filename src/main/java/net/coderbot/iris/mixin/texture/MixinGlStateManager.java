@@ -18,13 +18,13 @@ import java.nio.IntBuffer;
 
 @Mixin(GlStateManager.class)
 public class MixinGlStateManager {
-	@Inject(method = "_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", at = @At("TAIL"))
+	@Inject(method = "_texImage2D(IIIIIIIILjava/nio/IntBuffer;)V", at = @At("TAIL"), remap = false)
 	private static void iris$onTexImage2D(int target, int level, int internalformat, int width, int height, int border,
 										  int format, int type, @Nullable IntBuffer pixels, CallbackInfo ci) {
 		TextureInfoCache.INSTANCE.onTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
 	}
 
-	@Inject(method = "_deleteTexture(I)V", at = @At("TAIL"))
+	@Inject(method = "_deleteTexture(I)V", at = @At("TAIL"), remap = false)
 	private static void iris$onDeleteTexture(int id, CallbackInfo ci) {
 		iris$onDeleteTexture(id);
 	}
