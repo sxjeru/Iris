@@ -9,18 +9,19 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.coderbot.iris.block_rendering.BlockMaterialMapping;
 import net.coderbot.iris.block_rendering.BlockRenderingSettings;
-import net.coderbot.iris.gl.IrisRenderSystem;
 import net.coderbot.iris.gl.blending.AlphaTest;
 import net.coderbot.iris.gl.blending.BlendModeOverride;
 import net.coderbot.iris.gl.framebuffer.GlFramebuffer;
 import net.coderbot.iris.gl.image.ImageHolder;
 import net.coderbot.iris.gl.program.ProgramImages;
 import net.coderbot.iris.gl.program.ProgramSamplers;
+import net.coderbot.iris.gl.texture.DepthBufferFormat;
 import net.coderbot.iris.layer.GbufferProgram;
 import net.coderbot.iris.mixin.LevelRendererAccessor;
 import net.coderbot.iris.pipeline.ClearPass;
 import net.coderbot.iris.pipeline.ClearPassCreator;
 import net.coderbot.iris.pipeline.CustomTextureManager;
+import net.coderbot.iris.pipeline.HorizonRenderer;
 import net.coderbot.iris.pipeline.ShadowRenderer;
 import net.coderbot.iris.pipeline.SodiumTerrainPipeline;
 import net.coderbot.iris.pipeline.WorldRenderingPhase;
@@ -32,6 +33,7 @@ import net.coderbot.iris.postprocess.CompositeRenderer;
 import net.coderbot.iris.postprocess.FinalPassRenderer;
 import net.coderbot.iris.rendertarget.Blaze3dRenderTargetExt;
 import net.coderbot.iris.rendertarget.RenderTargets;
+import net.coderbot.iris.samplers.DepthBufferTracker;
 import net.coderbot.iris.samplers.IrisImages;
 import net.coderbot.iris.samplers.IrisSamplers;
 import net.coderbot.iris.shaderpack.PackShadowDirectives;
@@ -51,6 +53,7 @@ import net.coderbot.iris.vendored.joml.Vector4f;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.lwjgl.opengl.GL15C;
@@ -94,6 +97,8 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 	public boolean isBeforeTranslucent;
 
+	private final HorizonRenderer horizonRenderer = new HorizonRenderer();
+
 	private final float sunPathRotation;
 	private final boolean shouldRenderClouds;
 	private final boolean shouldRenderUnderwaterOverlay;
@@ -134,7 +139,11 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		this.oldLighting = programSet.getPackDirectives().isOldLighting();
 		this.updateNotifier = new FrameUpdateNotifier();
 
-		this.renderTargets = new RenderTargets(Minecraft.getInstance().getMainRenderTarget(), programSet.getPackDirectives().getRenderTargetDirectives());
+		RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+		int depthTextureId = main.getDepthTextureId();
+		DepthBufferFormat depthBufferFormat = DepthBufferTracker.INSTANCE.getFormat(depthTextureId);
+
+		this.renderTargets = new RenderTargets(main.width, main.height, depthTextureId, depthBufferFormat, programSet.getPackDirectives().getRenderTargetDirectives().getRenderTargetSettings());
 		this.sunPathRotation = programSet.getPackDirectives().getSunPathRotation();
 
 		PackShadowDirectives shadowDirectives = programSet.getPackDirectives().getShadowDirectives();
@@ -350,17 +359,17 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		}
 
 		return createShader(name, source.get(), key.getAlphaTest(), key.getVertexFormat(), key.getFogMode(),
-				key.isBeaconBeam(), key.isFullbright());
+				key.shouldIgnoreLightmap());
 	}
 
 	private ShaderInstance createShader(String name, ProgramSource source, AlphaTest fallbackAlpha,
-										VertexFormat vertexFormat, FogMode fogMode, boolean isBeacon,
+										VertexFormat vertexFormat, FogMode fogMode,
 										boolean isFullbright) throws IOException {
 		GlFramebuffer beforeTranslucent = renderTargets.createGbufferFramebuffer(flippedAfterPrepare, source.getDirectives().getDrawBuffers());
 		GlFramebuffer afterTranslucent = renderTargets.createGbufferFramebuffer(flippedAfterTranslucent, source.getDirectives().getDrawBuffers());
 
 		ExtendedShader extendedShader = NewShaderTests.create(name, source, beforeTranslucent, afterTranslucent,
-				baseline, fallbackAlpha, vertexFormat, updateNotifier, this, fogMode, isBeacon, isFullbright);
+				baseline, fallbackAlpha, vertexFormat, updateNotifier, this, fogMode, isFullbright);
 
 		loadedShaders.add(extendedShader);
 
@@ -378,7 +387,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 		FallbackShader shader = NewShaderTests.createFallback(name, beforeTranslucent, afterTranslucent,
 				key.getAlphaTest(), key.getVertexFormat(), null, this, key.getFogMode(),
-				key.hasDiffuseLighting(), key.isIntensity(), key.isBeaconBeam(), key.isFullbright());
+				key.hasDiffuseLighting(), key.isIntensity(), key.shouldIgnoreLightmap());
 
 		loadedShaders.add(shader);
 
@@ -390,8 +399,8 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 			return createFallbackShadowShader(name, key);
 		}
 
-		return createShadowShader(name, source.get(), key.getAlphaTest(), key.getVertexFormat(), key.isBeaconBeam(),
-				key.isFullbright());
+		return createShadowShader(name, source.get(), key.getAlphaTest(), key.getVertexFormat(),
+				key.shouldIgnoreLightmap());
 	}
 
 	private ShaderInstance createFallbackShadowShader(String name, ShaderKey key) throws IOException {
@@ -399,7 +408,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 		FallbackShader shader = NewShaderTests.createFallback(name, framebuffer, framebuffer,
 				key.getAlphaTest(), key.getVertexFormat(), BlendModeOverride.OFF, this, key.getFogMode(),
-				key.hasDiffuseLighting(), key.isIntensity(), key.isBeaconBeam(), key.isFullbright());
+				key.hasDiffuseLighting(), key.isIntensity(), key.shouldIgnoreLightmap());
 
 		loadedShaders.add(shader);
 
@@ -407,11 +416,11 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	}
 
 	private ShaderInstance createShadowShader(String name, ProgramSource source, AlphaTest fallbackAlpha,
-											  VertexFormat vertexFormat, boolean isBeacon, boolean isFullbright) throws IOException {
+											  VertexFormat vertexFormat, boolean isFullbright) throws IOException {
 		GlFramebuffer framebuffer = this.shadowMapRenderer.getRenderTargets().getFramebuffer();
 
 		ExtendedShader extendedShader = NewShaderTests.create(name, source, framebuffer, framebuffer, baseline,
-				fallbackAlpha, vertexFormat, updateNotifier, this, FogMode.ENABLED, isBeacon, isFullbright);
+				fallbackAlpha, vertexFormat, updateNotifier, this, FogMode.PER_VERTEX, isFullbright);
 
 		loadedShaders.add(extendedShader);
 
@@ -482,7 +491,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		updateNotifier.onNewFrame();
 
 		RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
-		renderTargets.resizeIfNeeded(((Blaze3dRenderTargetExt) main).iris$isDepthBufferDirty(), main.getDepthTextureId(), main.width, main.height);
+		renderTargets.resizeIfNeeded(((Blaze3dRenderTargetExt) main).iris$isDepthBufferDirty(), main.getDepthTextureId(), main.width, main.height, DepthBufferTracker.INSTANCE.getFormat(main.getDepthTextureId()));
 		((Blaze3dRenderTargetExt) main).iris$clearDepthBufferDirtyFlag();
 
 		final ImmutableList<ClearPass> passes;
@@ -512,6 +521,26 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 		main.bindWrite(true);
 
 		isBeforeTranslucent = true;
+
+		setPhase(WorldRenderingPhase.SKY);
+
+		// Render our horizon box before actual sky rendering to avoid being broken by mods that do weird things
+		// while rendering the sky.
+		//
+		// A lot of dimension mods touch sky rendering, FabricSkyboxes injects at HEAD and cancels, etc.
+		DimensionSpecialEffects.SkyType skyType = Minecraft.getInstance().level.effects().skyType();
+
+		if (skyType != DimensionSpecialEffects.SkyType.NONE) {
+			RenderSystem.disableTexture();
+			RenderSystem.depthMask(false);
+
+			RenderSystem.setShaderColor(fogColor.x, fogColor.y, fogColor.z, fogColor.w);
+
+			horizonRenderer.renderHorizon(CapturedRenderingState.INSTANCE.getGbufferModelView(), CapturedRenderingState.INSTANCE.getGbufferProjection(), GameRenderer.getPositionShader());
+
+			RenderSystem.depthMask(true);
+			RenderSystem.enableTexture();
+		}
 	}
 
 	@Override
@@ -551,14 +580,29 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 	}
 
+	private void copyDepthTexture() {
+		// Note: Use copyTexSubImage2D, since that will not re-allocate the target texture's storage,
+		// even though we copy the whole depth texture. This might make the copy be a bit faster.
+		GlStateManager._glCopyTexSubImage2D(
+			// target
+			GL20C.GL_TEXTURE_2D,
+			// level
+			0,
+			// xoffset, yoffset
+			0, 0,
+			// x, y
+			0, 0,
+			// width
+			renderTargets.getCurrentWidth(),
+			// height
+			renderTargets.getCurrentHeight());
+	}
+
 	@Override
 	public void beginHand() {
 		// We need to copy the current depth texture so that depthtex2 can contain the depth values for
 		// all non-translucent content excluding the hand, as required.
-		baseline.bind();
-		GlStateManager._bindTexture(renderTargets.getDepthTextureNoHand().getTextureId());
-		IrisRenderSystem.copyTexImage2D(GL20C.GL_TEXTURE_2D, 0, GL20C.GL_DEPTH_COMPONENT, 0, 0, renderTargets.getCurrentWidth(), renderTargets.getCurrentHeight(), 0);
-		GlStateManager._bindTexture(0);
+		renderTargets.copyPreHandDepth();
 	}
 
 	@Override
@@ -571,10 +615,7 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 
 		// We need to copy the current depth texture so that depthtex1 can contain the depth values for
 		// all non-translucent content, as required.
-		baseline.bind();
-		GlStateManager._bindTexture(renderTargets.getDepthTextureNoTranslucents().getTextureId());
-		IrisRenderSystem.copyTexImage2D(GL20C.GL_TEXTURE_2D, 0, GL20C.GL_DEPTH_COMPONENT, 0, 0, renderTargets.getCurrentWidth(), renderTargets.getCurrentHeight(), 0);
-		GlStateManager._bindTexture(0);
+		renderTargets.copyPreTranslucentDepth();
 
 		centerDepthSampler.updateSample();
 

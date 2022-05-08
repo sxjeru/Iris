@@ -1,4 +1,4 @@
-package net.coderbot.iris;
+package net.coderbot.iris.pipeline;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -44,13 +44,14 @@ public class HorizonRenderer {
 
 	private VertexBuffer buffer;
 
-	public static final HorizonRenderer INSTANCE = new HorizonRenderer();
+	private int cachedRenderDistance;
 
-	private HorizonRenderer() {
-		rebuildBuffer();
+	public HorizonRenderer() {
+		cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
+		createBuffer();
 	}
 
-	public void rebuildBuffer() {
+	private void createBuffer() {
 		if (buffer != null) {
 			buffer.close();
 		}
@@ -128,6 +129,24 @@ public class HorizonRenderer {
 		}
 	}
 
+	private void buildTopPlane(VertexConsumer consumer, int radius) {
+		// You might be tempted to try to combine this with buildBottomPlane to avoid code duplication,
+		// but that won't work since the winding order has to be reversed or else one of the planes will be
+		// discarded by back face culling.
+		for (int x = -radius; x <= radius; x += 64) {
+			for (int z = -radius; z <= radius; z += 64) {
+				consumer.vertex(x + 64, TOP, z);
+				consumer.endVertex();
+				consumer.vertex(x + 64, TOP, z + 64);
+				consumer.endVertex();
+				consumer.vertex(x, TOP, z + 64);
+				consumer.endVertex();
+				consumer.vertex(x, TOP, z);
+				consumer.endVertex();
+			}
+		}
+	}
+
 	private void buildHorizon(VertexConsumer consumer) {
 		int radius = getRenderDistanceInBlocks();
 
@@ -139,6 +158,10 @@ public class HorizonRenderer {
 
 		buildRegularOctagonalPrism(consumer, radius);
 
+		// Replicate the vanilla top plane since we can't assume that it'll be rendered.
+		// TODO: Remove vanilla top plane
+		buildTopPlane(consumer, 384);
+
 		// Always make the bottom plane have a radius of 384, to match the top plane.
 		buildBottomPlane(consumer, 384);
 	}
@@ -148,6 +171,11 @@ public class HorizonRenderer {
 	}
 
 	public void renderHorizon(Matrix4f modelView, Matrix4f projection, ShaderInstance shader) {
+		if (cachedRenderDistance != Minecraft.getInstance().options.getEffectiveRenderDistance()) {
+			cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
+			createBuffer();
+		}
+
 		// Despite the name, this actually dispatches the draw call using the specified shader.
 		buffer.drawWithShader(modelView, projection, shader);
 	}
