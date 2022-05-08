@@ -1,11 +1,11 @@
 package net.coderbot.iris.texture;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gl.state.StateUpdateNotifiers;
 import net.coderbot.iris.pipeline.WorldRenderingPipeline;
-import net.coderbot.iris.texture.pbr.PBRTextureManager;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,8 +18,7 @@ public class TextureTracker {
 		StateUpdateNotifiers.setShaderTextureNotifier = listener -> setShaderTextureListener = listener;
 	}
 
-	// Using the nullary ctor or 0 causes errors
-	private final ObjectArrayList<AbstractTexture> textures = new ObjectArrayList<>(ObjectArrayList.DEFAULT_INITIAL_CAPACITY);
+	private final Int2ObjectMap<AbstractTexture> textures = new Int2ObjectOpenHashMap<>();
 
 	private boolean lockSetShaderTextureCallback;
 
@@ -27,18 +26,12 @@ public class TextureTracker {
 	}
 
 	public void trackTexture(int id, AbstractTexture texture) {
-		if (id >= textures.size()) {
-			textures.size(id + 1);
-		}
-		textures.set(id, texture);
+		textures.put(id, texture);
 	}
 
 	@Nullable
 	public AbstractTexture getTexture(int id) {
-		if (id < textures.size()) {
-			return textures.get(id);
-		}
-		return null;
+		return textures.get(id);
 	}
 
 	public void onSetShaderTexture(int unit, int id) {
@@ -59,9 +52,6 @@ public class TextureTracker {
 	}
 
 	public void onDeleteTexture(int id) {
-		if (id < textures.size()) {
-			textures.set(id, null);
-		}
-		PBRTextureManager.INSTANCE.onDeleteTexture(id);
+		textures.remove(id);
 	}
 }

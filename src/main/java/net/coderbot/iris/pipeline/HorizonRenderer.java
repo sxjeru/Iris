@@ -1,14 +1,14 @@
 package net.coderbot.iris.pipeline;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
+import org.lwjgl.opengl.GL11;
 
 /**
  * Renders the sky horizon. Vanilla Minecraft simply uses the "clear color" for its horizon, and then draws a plane
@@ -42,30 +42,7 @@ public class HorizonRenderer {
 	 */
 	private static final double SIN_22_5 = Math.sin(Math.toRadians(22.5));
 
-	private VertexBuffer buffer;
-
-	private int cachedRenderDistance;
-
 	public HorizonRenderer() {
-		cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
-		createBuffer();
-	}
-
-	private void createBuffer() {
-		if (buffer != null) {
-			buffer.close();
-		}
-
-		buffer = new VertexBuffer();
-
-		BufferBuilder builder = Tesselator.getInstance().getBuilder();
-
-		// Build the horizon quads into a buffer
-		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-		buildHorizon(builder);
-		builder.end();
-
-		buffer.upload(builder);
 	}
 
 	private void buildQuad(VertexConsumer consumer, double x1, double z1, double x2, double z2) {
@@ -167,16 +144,22 @@ public class HorizonRenderer {
 	}
 
 	private int getRenderDistanceInBlocks() {
-		return Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
+		return Minecraft.getInstance().options.renderDistance * 16;
 	}
 
-	public void renderHorizon(Matrix4f modelView, Matrix4f projection, ShaderInstance shader) {
-		if (cachedRenderDistance != Minecraft.getInstance().options.getEffectiveRenderDistance()) {
-			cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
-			createBuffer();
-		}
+	public void renderHorizon(Matrix4f matrix) {
+		BufferBuilder buffer = Tesselator.getInstance().getBuilder();
 
-		// Despite the name, this actually dispatches the draw call using the specified shader.
-		buffer.drawWithShader(modelView, projection, shader);
+		// Build the horizon quads into a buffer
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION);
+		buildHorizon(buffer);
+		buffer.end();
+
+		// Render the horizon buffer
+		RenderSystem.pushMatrix();
+		RenderSystem.loadIdentity();
+		RenderSystem.multMatrix(matrix);
+		BufferUploader.end(buffer);
+		RenderSystem.popMatrix();
 	}
 }

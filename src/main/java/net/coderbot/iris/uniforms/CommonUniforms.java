@@ -12,7 +12,8 @@ import net.coderbot.iris.mixin.statelisteners.BooleanStateAccessor;
 import net.coderbot.iris.pipeline.newshader.FogMode;
 import net.coderbot.iris.shaderpack.IdMap;
 import net.coderbot.iris.shaderpack.PackDirectives;
-import net.coderbot.iris.texture.AtlasInfoGatherer;
+import net.coderbot.iris.texture.TextureInfoCache;
+import net.coderbot.iris.texture.TextureInfoCache.TextureInfo;
 import net.coderbot.iris.texture.TextureTracker;
 import net.coderbot.iris.uniforms.transforms.SmoothedFloat;
 import net.coderbot.iris.uniforms.transforms.SmoothedVec2f;
@@ -77,8 +78,8 @@ public final class CommonUniforms {
 
 			AbstractTexture texture = TextureTracker.INSTANCE.getTexture(glId);
 			if (texture instanceof TextureAtlas) {
-				TextureAtlas atlas = (TextureAtlas) texture;
-				return AtlasInfoGatherer.getSizeVector(atlas);
+				TextureInfo info = TextureInfoCache.INSTANCE.getInfo(glId);
+				return new Vector2i(info.getWidth(), info.getHeight());
 			}
 
 			return ZERO_VECTOR_2i;
