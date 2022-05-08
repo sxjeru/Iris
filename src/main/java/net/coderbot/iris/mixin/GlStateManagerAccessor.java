@@ -14,11 +14,6 @@ public interface GlStateManagerAccessor {
 		throw new UnsupportedOperationException("Not accessed");
 	}
 
-	@Accessor("activeTexture")
-	static int getActiveTexture() {
-		throw new UnsupportedOperationException("Not accessed");
-	}
-
 	@Accessor("TEXTURES")
 	static GlStateManager.TextureState[] getTEXTURES() {
 		throw new UnsupportedOperationException("Not accessed");

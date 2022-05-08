@@ -112,9 +112,9 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
             //
             // TODO: Does this introduce precision issues? Do we need to fall back to floats here? This might break
             // with high resolution texture packs.
-            int midU = (int)(65535.0F * Math.min(uSum * 0.25f, 1.0f)) & 0xFFFF;
-            int midV = (int)(65535.0F * Math.min(vSum * 0.25f, 1.0f)) & 0xFFFF;
-            int midTexCoord = (midV << 16) | midU;
+			short midU = XHFPModelVertexType.encodeBlockTexture(Math.min(uSum * 0.25f, 65535.0F/65536.0F));
+			short midV = XHFPModelVertexType.encodeBlockTexture(Math.min(vSum * 0.25f, 65535.0F/65536.0F));
+			int midTexCoord = (Short.toUnsignedInt(midV) << 16) | Short.toUnsignedInt(midU);
 
             buffer.putInt(i + 20, midTexCoord);
             buffer.putInt(i + 20 - STRIDE, midTexCoord);

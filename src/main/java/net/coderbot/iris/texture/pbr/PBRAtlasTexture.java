@@ -1,6 +1,8 @@
 package net.coderbot.iris.texture.pbr;
 
 import com.mojang.blaze3d.platform.TextureUtil;
+import net.coderbot.iris.mixin.texture.SpriteAnimatedTextureAccessor;
+import net.coderbot.iris.mixin.texture.SpriteFrameInfoAccessor;
 import net.coderbot.iris.mixin.texture.TextureAtlasSpriteAccessor;
 import net.coderbot.iris.texture.util.TextureExporter;
 import net.coderbot.iris.texture.util.TextureManipulationUtil;
