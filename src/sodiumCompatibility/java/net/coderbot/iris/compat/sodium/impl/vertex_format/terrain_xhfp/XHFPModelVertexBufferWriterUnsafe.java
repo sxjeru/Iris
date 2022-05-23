@@ -6,25 +6,25 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import net.coderbot.iris.block_rendering.MaterialIdHolder;
 import net.coderbot.iris.compat.sodium.impl.block_id.MaterialIdAwareVertexWriter;
 import net.coderbot.iris.compat.sodium.impl.vertex_format.IrisModelVertexFormats;
-import net.coderbot.iris.compat.sodium.impl.vertex_format.NormalHelper;
 import net.coderbot.iris.vendored.joml.Vector3f;
+import net.coderbot.iris.vertices.NormalHelper;
 import org.lwjgl.system.MemoryUtil;
 
 import static net.coderbot.iris.compat.sodium.impl.vertex_format.terrain_xhfp.XHFPModelVertexType.STRIDE;
 
 public class XHFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements ModelVertexSink, MaterialIdAwareVertexWriter {
+    private final QuadViewTerrain.QuadViewTerrainUnsafe quad = new QuadViewTerrain.QuadViewTerrainUnsafe();
+    private final Vector3f normal = new Vector3f();
+
     private MaterialIdHolder idHolder;
+
+    private int vertexCount;
+    private float uSum;
+    private float vSum;
 
     public XHFPModelVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
         super(backingBuffer, IrisModelVertexFormats.MODEL_VERTEX_XHFP);
     }
-
-    int vertexCount = 0;
-    float uSum;
-    float vSum;
-
-    private final QuadViewTerrain.QuadViewTerrainUnsafe currentQuad = new QuadViewTerrain.QuadViewTerrainUnsafe();
-    private final Vector3f normal = new Vector3f();
 
 	@Override
 	public void copyQuadAndFlipNormal() {
@@ -33,13 +33,13 @@ public class XHFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe 
 		MemoryUtil.memCopy(this.writePointer - STRIDE * 4, this.writePointer, STRIDE * 4);
 
 		// Now flip vertex normals
-		int packedNormal = MemoryUtil.memGetInt(this.writePointer + 32);
+		int packedNormal = MemoryUtil.memGetInt(this.writePointer + 28);
 		int inverted = NormalHelper.invertPackedNormal(packedNormal);
 
-		MemoryUtil.memPutInt(this.writePointer + 32, inverted);
-		MemoryUtil.memPutInt(this.writePointer + 32 + STRIDE, inverted);
-		MemoryUtil.memPutInt(this.writePointer + 32 + STRIDE * 2L, inverted);
-		MemoryUtil.memPutInt(this.writePointer + 32 + STRIDE * 3L, inverted);
+		MemoryUtil.memPutInt(this.writePointer + 28, inverted);
+		MemoryUtil.memPutInt(this.writePointer + 28 + STRIDE, inverted);
+		MemoryUtil.memPutInt(this.writePointer + 28 + STRIDE * 2, inverted);
+		MemoryUtil.memPutInt(this.writePointer + 28 + STRIDE * 3, inverted);
 
 		// We just wrote 4 vertices, advance by 4
 		for (int i = 0; i < 4; i++) {
@@ -87,51 +87,52 @@ public class XHFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe 
 		MemoryUtil.memPutShort(i + 32, materialId);
 		MemoryUtil.memPutShort(i + 34, renderType);
 
-		if (vertexCount == 4) {
-			// TODO: Consider applying similar vertex coordinate transformations as the normal HFP texture coordinates
+        if (vertexCount == 4) {
+            vertexCount = 0;
 
-            // NB: Be careful with the math here! A previous bug was caused by midU going negative as a short, which
-            // was sign-extended into midTexCoord, causing midV to have garbage (likely NaN data). If you're touching
-            // this code, be aware of that, and don't introduce those kinds of bugs!
-            //
-            // Also note that OpenGL takes shorts in the range of [0, 65535] and transforms them linearly to [0.0, 1.0],
-            // so multiply by 65535, not 65536.
-            //
-            // TODO: Does this introduce precision issues? Do we need to fall back to floats here? This might break
-            // with high resolution texture packs.
-			short midU = XHFPModelVertexType.encodeBlockTexture(Math.min(uSum * 0.25f, 65535.0F/65536.0F));
-			short midV = XHFPModelVertexType.encodeBlockTexture(Math.min(vSum * 0.25f, 65535.0F/65536.0F));
-			int midTexCoord = (Short.toUnsignedInt(midV) << 16) | Short.toUnsignedInt(midU);
+            // TODO: Consider applying similar vertex coordinate transformations as the normal HFP texture coordinates
+
+			// NB: Be careful with the math here! A previous bug was caused by midU going negative as a short, which
+			// was sign-extended into midTexCoord, causing midV to have garbage (likely NaN data). If you're touching
+			// this code, be aware of that, and don't introduce those kinds of bugs!
+			//
+			// Also note that OpenGL takes shorts in the range of [0, 65535] and transforms them linearly to [0.0, 1.0],
+			// so multiply by 65535, not 65536.
+			//
+			// TODO: Does this introduce precision issues? Do we need to fall back to floats here? This might break
+			// with high resolution texture packs.
+			int midU = (int)(65535.0F * Math.min(uSum * 0.25f, 1.0f)) & 0xFFFF;
+			int midV = (int)(65535.0F * Math.min(vSum * 0.25f, 1.0f)) & 0xFFFF;
+			int midTexCoord = (midV << 16) | midU;
 
 			MemoryUtil.memPutInt(i + 20, midTexCoord);
-            MemoryUtil.memPutInt(i + 20 - STRIDE, midTexCoord);
-            MemoryUtil.memPutInt(i + 20 - STRIDE * 2, midTexCoord);
-            MemoryUtil.memPutInt(i + 20 - STRIDE * 3, midTexCoord);
+			MemoryUtil.memPutInt(i + 20 - STRIDE, midTexCoord);
+			MemoryUtil.memPutInt(i + 20 - STRIDE * 2, midTexCoord);
+			MemoryUtil.memPutInt(i + 20 - STRIDE * 3, midTexCoord);
 
-			vertexCount = 0;
-			uSum = 0;
-			vSum = 0;
+            uSum = 0;
+            vSum = 0;
 
 			// normal computation
 			// Implementation based on the algorithm found here:
 			// https://github.com/IrisShaders/ShaderDoc/blob/master/vertex-format-extensions.md#surface-normal-vector
 
-            currentQuad.setup(i, STRIDE);
-			NormalHelper.computeFaceNormal(normal, currentQuad);
-			int packedNormal = NormalHelper.packNormal(normal, 0.0f);
+            quad.setup(i, STRIDE);
+			NormalHelper.computeFaceNormal(normal, quad);
+            int packedNormal = NormalHelper.packNormal(normal, 0.0f);
 
-            MemoryUtil.memPutInt(i + 28, packedNormal);
-            MemoryUtil.memPutInt(i + 28 - STRIDE, packedNormal);
-            MemoryUtil.memPutInt(i + 28 - STRIDE * 2, packedNormal);
-            MemoryUtil.memPutInt(i + 28 - STRIDE * 3, packedNormal);
+			MemoryUtil.memPutInt(i + 28, packedNormal);
+			MemoryUtil.memPutInt(i + 28 - STRIDE, packedNormal);
+			MemoryUtil.memPutInt(i + 28 - STRIDE * 2, packedNormal);
+			MemoryUtil.memPutInt(i + 28 - STRIDE * 3, packedNormal);
 
-			int tangent = currentQuad.computeTangent(normal.x(), normal.y(), normal.z());
+            int tangent = NormalHelper.computeTangent(normal.x, normal.y, normal.z, quad);
 
-            MemoryUtil.memPutInt(i + 24, tangent);
-            MemoryUtil.memPutInt(i + 24 - STRIDE, tangent);
-            MemoryUtil.memPutInt(i + 24 - STRIDE * 2, tangent);
-            MemoryUtil.memPutInt(i + 24 - STRIDE * 3, tangent);
-        }
+			MemoryUtil.memPutInt(i + 24, tangent);
+			MemoryUtil.memPutInt(i + 24 - STRIDE, tangent);
+			MemoryUtil.memPutInt(i + 24 - STRIDE * 2, tangent);
+			MemoryUtil.memPutInt(i + 24 - STRIDE * 3, tangent);
+		}
 
 		this.advance();
 	}

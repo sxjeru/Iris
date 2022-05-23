@@ -44,7 +44,18 @@ public class HorizonRenderer {
 
 	private VertexBuffer buffer;
 
+	private int cachedRenderDistance;
+
 	public HorizonRenderer() {
+		cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
+		createBuffer();
+	}
+
+	private void createBuffer() {
+		if (buffer != null) {
+			buffer.close();
+		}
+
 		buffer = new VertexBuffer();
 
 		BufferBuilder builder = Tesselator.getInstance().getBuilder();
@@ -156,14 +167,15 @@ public class HorizonRenderer {
 	}
 
 	private int getRenderDistanceInBlocks() {
-		return Minecraft.getInstance().options.renderDistance * 16;
-	}
-
-	public void close() {
-		buffer.close();
+		return Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
 	}
 
 	public void renderHorizon(Matrix4f modelView, Matrix4f projection, ShaderInstance shader) {
+		if (cachedRenderDistance != Minecraft.getInstance().options.getEffectiveRenderDistance()) {
+			cachedRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance();
+			createBuffer();
+		}
+
 		// Despite the name, this actually dispatches the draw call using the specified shader.
 		buffer.drawWithShader(modelView, projection, shader);
 	}

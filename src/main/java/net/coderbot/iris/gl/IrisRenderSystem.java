@@ -38,9 +38,9 @@ public class IrisRenderSystem {
 		GL32C.glBindAttribLocation(program, index, name);
 	}
 
-	public static void texImage2D(int i, int j, int k, int l, int m, int n, int o, int p, @Nullable ByteBuffer byteBuffer) {
+	public static void texImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
 		RenderSystem.assertOnRenderThreadOrInit();
-		GL32C.glTexImage2D(i, j, k, l, m, n, o, p, byteBuffer);
+		GL32C.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
 	}
 
 	public static void uniform1f(int location, float v0) {

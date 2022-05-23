@@ -3,9 +3,9 @@ package net.coderbot.iris.gl.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.GlUtil;
-import net.coderbot.iris.gl.IrisRenderSystem;
 import net.coderbot.iris.pipeline.HandRenderer;
 import net.coderbot.iris.pipeline.WorldRenderingPhase;
+import net.coderbot.iris.shaderpack.StringPair;
 import net.coderbot.iris.texture.format.TextureFormat;
 import net.coderbot.iris.texture.format.TextureFormatLoader;
 import net.minecraft.SharedConstants;
@@ -14,43 +14,63 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class StandardMacros {
 	private static final Pattern SEMVER_PATTERN = Pattern.compile("(?<major>\\d+)\\.(?<minor>\\d+)\\.*(?<bugfix>\\d*)(.*)");
 
-	public static ImmutableList<String> createDefines() {
-		MacroBuilder builder = new MacroBuilder();
+	private static void define(List<StringPair> defines, String key) {
+		defines.add(new StringPair(key, ""));
+	}
 
-		builder
-			.define("MC_VERSION", getMcVersion())
-			.define("MC_GL_VERSION", getGlVersion(GL20C.GL_VERSION))
-			.define("MC_GLSL_VERSION", getGlVersion(GL20C.GL_SHADING_LANGUAGE_VERSION))
-			.define(getOsString())
-			.define(getVendor())
-			.define(getRenderer());
+	private static void define(List<StringPair> defines, String key, String value) {
+		defines.add(new StringPair(key, value));
+	}
 
-		addGlExtensions(builder);
+	public static Iterable<StringPair> createStandardEnvironmentDefines() {
+		ArrayList<StringPair> standardDefines = new ArrayList<>();
 
-		builder
-			.define("MC_NORMAL_MAP")
-			.define("MC_SPECULAR_MAP")
-			.define("MC_RENDER_QUALITY", "1.0")
-			.define("MC_SHADOW_QUALITY", "1.0")
-			.define("MC_HAND_DEPTH", Float.toString(HandRenderer.DEPTH));
+		define(standardDefines, "MC_VERSION", getMcVersion());
+		define(standardDefines, "MC_GL_VERSION", getGlVersion(GL20C.GL_VERSION));
+		define(standardDefines, "MC_GLSL_VERSION", getGlVersion(GL20C.GL_SHADING_LANGUAGE_VERSION));
+		define(standardDefines, getOsString());
+		define(standardDefines, getVendor());
+		define(standardDefines, getRenderer());
+
+		for (String glExtension : getGlExtensions()) {
+			define(standardDefines, glExtension);
+		}
+
+		define(standardDefines, "MC_NORMAL_MAP");
+		define(standardDefines, "MC_SPECULAR_MAP");
+		define(standardDefines, "MC_RENDER_QUALITY", "1.0");
+		define(standardDefines, "MC_SHADOW_QUALITY", "1.0");
+		define(standardDefines, "MC_HAND_DEPTH", Float.toString(HandRenderer.DEPTH));
 
 		TextureFormat textureFormat = TextureFormatLoader.getFormat();
 		if (textureFormat != null) {
-			textureFormat.addMacros(builder);
+			for (String define : textureFormat.getDefines()) {
+				define(standardDefines, define);
+			}
 		}
 
-		addRenderStages(builder);
-		addIrisMacros(builder);
+		getRenderStages().forEach((stage, index) -> define(standardDefines, stage, index));
 
-		return builder.build();
+		for (String irisDefine : getIrisDefines()) {
+			define(standardDefines, irisDefine);
+		}
+
+		return ImmutableList.copyOf(standardDefines);
 	}
 
 	/**
@@ -61,9 +81,9 @@ public class StandardMacros {
 	 */
 	public static String getMcVersion() {
 		String version = SharedConstants.getCurrentVersion().getReleaseTarget();
-		// release target so snapshots are set to the higher version
-		//
-		// For example if we were running iris on 21w07a, getReleaseTarget() would return 1.17
+			// release target so snapshots are set to the higher version
+			//
+			// For example if we were running iris on 21w07a, getReleaseTarget() would return 1.17
 
 		if (version == null) {
 			throw new IllegalStateException("Could not get the current minecraft version!");
@@ -126,7 +146,6 @@ public class StandardMacros {
 		}
 
 		return major + minor + bugfix;
-
 	}
 
 	/**
@@ -170,7 +189,7 @@ public class StandardMacros {
 	 * Returns a string indicating the graphics card being used
 	 *
 	 * @return the graphics card prefixed with "MC_GL_VENDOR_"
-	 * @see <a href="https://github.com/sp614x/optifine/blob/9c6a5b5326558ccc57c6490b66b3be3b2dc8cbef/OptiFineDoc/doc/shaders.txt#L716-L723">Optifine doc</a>
+	 * @see <a href="https://github.com/sp614x/optifine/blob/9c6a5b5326558ccc57c6490b66b3be3b2dc8cbef/OptiFineDoc/doc/shaders.txt#L716-L723">Optifine Doc</a>
 	 */
 	public static String getVendor() {
 		String vendor = Objects.requireNonNull(GlUtil.getVendor()).toLowerCase(Locale.ROOT);
@@ -221,38 +240,51 @@ public class StandardMacros {
 	}
 
 	/**
-	 * Adds the currently enabled GL extensions as macros to the builder
+	 * Returns the list of currently enabled GL extensions
 	 * This is done by calling {@link GL11#glGetString} with the arg {@link GL11#GL_EXTENSIONS}
 	 *
+	 * @return list of activated extensions prefixed with "MC_"
 	 * @see <a href="https://github.com/sp614x/optifine/blob/9c6a5b5326558ccc57c6490b66b3be3b2dc8cbef/OptiFineDoc/doc/shaders.txt#L735-L738">Optifine Doc</a>
 	 */
-	public static void addGlExtensions(MacroBuilder builder) {
+	public static Set<String> getGlExtensions() {
 		// In OpenGL Core, we must use a new way of retrieving extensions.
-		int numExtensions = GlStateManager._getInteger(GL30C.GL_NUM_EXTENSIONS);
+		int numExtensions = GL30C.glGetInteger(GL30C.GL_NUM_EXTENSIONS);
+
+		String[] extensions = new String[numExtensions];
 
 		for (int i = 0; i < numExtensions; i++) {
-			String extension = IrisRenderSystem.getStringi(GL30C.GL_EXTENSIONS, i);
-			builder.define("MC_" + extension);
+			extensions[i] = GL30C.glGetStringi(GL30C.GL_EXTENSIONS, i);
 		}
-
-		// TODO: unified way of getting extensions on the core and compatibility profile?
-		// String[] extensions = Objects.requireNonNull(GL11.glGetString(GL11.GL_EXTENSIONS)).split("\\s+");
 
 		// TODO note that we do not add extensions based on if the shader uses them and if they are supported
 		// see https://github.com/sp614x/optifine/blob/master/OptiFineDoc/doc/shaders.txt#L738
+
+		// NB: Use Collectors.toSet(). In some cases, there are duplicate extensions in the extension list.
+		// RenderDoc is one example - it causes the GL_KHR_debug extension to appear twice:
+		//
+		// https://github.com/IrisShaders/Iris/issues/971
+		return Arrays.stream(extensions).map(s -> "MC_" + s).collect(Collectors.toSet());
 	}
 
-	public static void addRenderStages(MacroBuilder builder) {
+
+	public static Map<String, String> getRenderStages() {
+		Map<String, String> stages = new HashMap<>();
 		for (WorldRenderingPhase phase : WorldRenderingPhase.values()) {
-			builder.define("MC_RENDER_STAGE_" + phase.name(), String.valueOf(phase.ordinal()));
+			stages.put("MC_RENDER_STAGE_" + phase.name(), String.valueOf(phase.ordinal()));
 		}
+		return stages;
 	}
 
 	/**
-	 * Adds all Iris-exclusive uniforms supported in the current version of Iris as macros to the builder.
+	 * Returns the list of Iris-exclusive uniforms supported in the current version of Iris.
+	 *
+	 * @return List of definitions corresponding to the uniform names prefixed with "MC_"
 	 */
-	public static void addIrisMacros(MacroBuilder builder) {
+	public static List<String> getIrisDefines() {
+		List<String> defines = new ArrayList<>();
 		// All Iris-exclusive uniforms should have a corresponding definition here. Example:
-		// builder.define("MC_UNIFORM_DRAGON_DEATH_PROGRESS");
+		// defines.add("MC_UNIFORM_DRAGON_DEATH_PROGRESS");
+
+		return defines;
 	}
 }

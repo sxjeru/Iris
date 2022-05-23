@@ -37,7 +37,6 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.material.FogType;
-import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Objects;
@@ -73,6 +72,10 @@ public final class CommonUniforms {
 
 		// TODO: OptiFine doesn't think that atlasSize is a "dynamic" uniform,
 		//       but we do. How will custom uniforms depending on atlasSize work?
+		//
+		// Note: on 1.17+ we don't need to reset this when textures are bound, since
+		// the shader will always be setup (and therefore uniforms will be re-uploaded)
+		// after the texture is changed and before rendering starts.
 		uniforms.uniform2i("atlasSize", () -> {
 			int glId = RenderSystem.getShaderTexture(0);
 
@@ -83,7 +86,7 @@ public final class CommonUniforms {
 			}
 
 			return ZERO_VECTOR_2i;
-		}, StateUpdateNotifiers.setShaderTextureNotifier);
+		}, listener -> {});
 
 		uniforms.uniform4i("blendFunc", () -> {
 			GlStateManager.BlendState blend = GlStateManagerAccessor.getBLEND();

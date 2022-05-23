@@ -1,7 +1,6 @@
 package net.coderbot.iris.mixin.texture;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.coderbot.iris.gl.sampler.SamplerLimits;
 import net.coderbot.iris.texture.TextureInfoCache;
 import net.coderbot.iris.texture.TextureTracker;
 import net.coderbot.iris.texture.pbr.PBRTextureManager;
@@ -9,9 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.IntBuffer;
@@ -29,17 +26,11 @@ public class MixinGlStateManager {
 		iris$onDeleteTexture(id);
 	}
 
-
 	@Inject(method = "_deleteTextures([I)V", at = @At("TAIL"), remap = false)
 	private static void iris$onDeleteTextures(int[] ids, CallbackInfo ci) {
 		for (int id : ids) {
 			iris$onDeleteTexture(id);
 		}
-	}
-
-	@ModifyConstant(method = "_getTextureId", constant = @Constant(intValue = 12), require = 1, remap = false)
-	private static int iris$increaseMaximumAllowedTextureIdUnits(int existingValue) {
-		return SamplerLimits.get().getMaxTextureUnits();
 	}
 
 	@Unique
