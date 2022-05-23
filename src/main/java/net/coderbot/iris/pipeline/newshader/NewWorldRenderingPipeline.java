@@ -534,8 +534,8 @@ public class NewWorldRenderingPipeline implements WorldRenderingPipeline, CoreWo
 	public void onSetShaderTexture(int id) {
 		if (shouldBindPBR && isRenderingWorld) {
 			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
-			RenderSystem.setShaderTexture(GL15C.GL_TEXTURE0 + IrisSamplers.NORMALS_TEXTURE_UNIT, pbrHolder.getNormalTexture().getId());
-			RenderSystem.setShaderTexture(GL15C.GL_TEXTURE0 + IrisSamplers.SPECULAR_TEXTURE_UNIT, pbrHolder.getSpecularTexture().getId());
+			RenderSystem.setShaderTexture(IrisSamplers.NORMALS_TEXTURE_UNIT, pbrHolder.getNormalTexture().getId());
+			RenderSystem.setShaderTexture(IrisSamplers.SPECULAR_TEXTURE_UNIT, pbrHolder.getSpecularTexture().getId());
 		}
 	}
 

@@ -1,8 +1,10 @@
 package net.coderbot.iris.texture.pbr;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.coderbot.iris.Iris;
+import net.coderbot.iris.mixin.GlStateManagerAccessor;
 import net.coderbot.iris.rendertarget.NativeImageBackedSingleColorTexture;
 import net.coderbot.iris.texture.TextureTracker;
 import net.coderbot.iris.texture.pbr.loader.PBRTextureLoader;
@@ -68,7 +70,9 @@ public class PBRTextureManager {
 				Class<? extends AbstractTexture> clazz = texture.getClass();
 				PBRTextureLoader loader = PBRTextureLoaderRegistry.INSTANCE.getLoader(clazz);
 				if (loader != null) {
+					int previousBinding = GlStateManagerAccessor.getTEXTURES()[GlStateManagerAccessor.getActiveTexture()].binding;
 					loader.load(texture, Minecraft.getInstance().getResourceManager(), consumer);
+					GlStateManager._bindTexture(previousBinding);
 
 					AbstractTexture normalTexture = consumer.normalTexture;
 					AbstractTexture specularTexture = consumer.specularTexture;

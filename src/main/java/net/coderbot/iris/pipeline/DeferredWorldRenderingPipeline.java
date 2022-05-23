@@ -1058,10 +1058,8 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline, R
 	public void onSetShaderTexture(int id) {
 		if (shouldBindPBR && isRenderingWorld) {
 			PBRTextureHolder pbrHolder = PBRTextureManager.INSTANCE.getOrLoadHolder(id);
-			RenderSystem.activeTexture(GL15C.GL_TEXTURE0 + IrisSamplers.NORMALS_TEXTURE_UNIT);
-			RenderSystem.bindTexture(pbrHolder.getNormalTexture().getId());
-			RenderSystem.activeTexture(GL15C.GL_TEXTURE0 + IrisSamplers.SPECULAR_TEXTURE_UNIT);
-			RenderSystem.bindTexture(pbrHolder.getSpecularTexture().getId());
+			RenderSystem.setShaderTexture(IrisSamplers.NORMALS_TEXTURE_UNIT, pbrHolder.getNormalTexture().getId());
+			RenderSystem.setShaderTexture(IrisSamplers.SPECULAR_TEXTURE_UNIT, pbrHolder.getSpecularTexture().getId());
 		}
 	}
 }
