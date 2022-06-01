@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL42C;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 /**
@@ -17,6 +18,9 @@ import java.nio.IntBuffer;
  */
 public class IrisRenderSystem {
 	private static Matrix4f backupProjection;
+	private static net.coderbot.iris.vendored.joml.Matrix4f projectionInverse;
+	private static net.coderbot.iris.vendored.joml.Matrix4f modelViewInverse;
+	private static net.coderbot.iris.vendored.joml.Matrix4f modelViewInverseTransposed;
 
 	public static void getIntegerv(int pname, int[] params) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
@@ -175,5 +179,42 @@ public class IrisRenderSystem {
 	public static void restorePlayerProjection() {
 		RenderSystem.setProjectionMatrix(backupProjection);
 		backupProjection = null;
+	}
+
+	public static void setProjectionInverse(Matrix4f originalProjection) {
+		FloatBuffer buffer = FloatBuffer.allocate(16);
+
+		originalProjection.store(buffer);
+		buffer.rewind();
+
+		net.coderbot.iris.vendored.joml.Matrix4f matrix4f = new net.coderbot.iris.vendored.joml.Matrix4f(buffer);
+		matrix4f.invert();
+
+		projectionInverse = matrix4f;
+	}
+
+	public static void setModelViewInverse(Matrix4f originalModelView) {
+		FloatBuffer buffer = FloatBuffer.allocate(16);
+
+		originalModelView.store(buffer);
+		buffer.rewind();
+
+		net.coderbot.iris.vendored.joml.Matrix4f matrix4f = new net.coderbot.iris.vendored.joml.Matrix4f(buffer);
+		matrix4f.invert();
+
+		modelViewInverse = matrix4f;
+		modelViewInverseTransposed = new net.coderbot.iris.vendored.joml.Matrix4f(matrix4f).transpose();
+	}
+
+	public static net.coderbot.iris.vendored.joml.Matrix4f getProjectionInverse() {
+		return projectionInverse;
+	}
+
+	public static net.coderbot.iris.vendored.joml.Matrix4f getModelViewInverse() {
+		return modelViewInverse;
+	}
+
+	public static net.coderbot.iris.vendored.joml.Matrix4f getModelViewInverseTransposed() {
+		return modelViewInverseTransposed;
 	}
 }

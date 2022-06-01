@@ -198,10 +198,13 @@ public class TriforcePatcher {
 		transformations.replaceExact("gl_TextureMatrix[0]", "iris_TextureMat");
 		transformations.replaceExact("gl_TextureMatrix[1]", "iris_LightmapTextureMatrix");
 
-		// TODO: Should probably add the normal matrix as a proper uniform that's computed on the CPU-side of things
-		transformations.define("gl_NormalMatrix", "mat3(transpose(inverse(gl_ModelViewMatrix)))");
+		transformations.define("gl_NormalMatrix", "mat3(iris_normalMatrix)");
+		transformations.define("gl_ProjectionMatrixInverse", "iris_invertedProjectionMatrix");
 
 		transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE, "uniform mat4 iris_ModelViewMat;");
+		transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE, "uniform mat4 iris_invertedModelMatrix;");
+		transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE, "uniform mat4 iris_invertedProjectionMatrix;");
+		transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE, "uniform mat4 iris_normalMatrix;");
 
 		if (hasChunkOffset) {
 			transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE, "uniform vec3 iris_ChunkOffset;");
@@ -213,6 +216,7 @@ public class TriforcePatcher {
 					"                offset.x, offset.y, offset.z, 1.0);\n" +
 					"}");
 			transformations.injectLine(Transformations.InjectionPoint.DEFINES, "#define gl_ModelViewMatrix (iris_ModelViewMat * _iris_internal_translate(iris_ChunkOffset))");
+			transformations.injectLine(Transformations.InjectionPoint.DEFINES, "#define gl_ModelViewMatrixInverse (iris_invertedModelMatrix * _iris_internal_translate(iris_ChunkOffset))");
 		} else if (inputs.isNewLines()) {
 			transformations.injectLine(Transformations.InjectionPoint.BEFORE_CODE,
 					"const float iris_VIEW_SHRINK = 1.0 - (1.0 / 256.0);\n" +
@@ -223,6 +227,7 @@ public class TriforcePatcher {
 							"    0.0, 0.0, 0.0, 1.0\n" +
 							");");
 			transformations.injectLine(Transformations.InjectionPoint.DEFINES, "#define gl_ModelViewMatrix (iris_VIEW_SCALE * iris_ModelViewMat)");
+			transformations.injectLine(Transformations.InjectionPoint.DEFINES, "#define gl_ModelViewMatrixInverse (iris_VIEW_SCALE * iris_invertedModelMatrix)");
 		} else {
 			transformations.injectLine(Transformations.InjectionPoint.DEFINES, "#define gl_ModelViewMatrix iris_ModelViewMat");
 		}

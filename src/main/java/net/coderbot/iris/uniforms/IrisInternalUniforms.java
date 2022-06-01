@@ -31,6 +31,10 @@ public class IrisInternalUniforms {
 			return Math.max(0.0F, CapturedRenderingState.INSTANCE.getFogDensity());
 		}, notifier -> {});
 
+		uniforms.uniformJomlMatrix(PER_FRAME, "iris_invertedProjectionMatrix", IrisRenderSystem::getProjectionInverse);
+		uniforms.uniformJomlMatrix(PER_FRAME, "iris_invertedModelMatrix", IrisRenderSystem::getModelViewInverse);
+		uniforms.uniformJomlMatrix(PER_FRAME, "iris_normalMatrix", IrisRenderSystem::getModelViewInverseTransposed);
+
 		uniforms.uniform1f("iris_currentAlphaTest", CapturedRenderingState.INSTANCE::getCurrentAlphaTest, notifier -> {});
 	}
 }
