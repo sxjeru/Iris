@@ -90,6 +90,11 @@ public class FixedFunctionWorldRenderingPipeline implements WorldRenderingPipeli
 	}
 
 	@Override
+	public void onSetShaderTexture(int id) {
+
+	}
+
+	@Override
 	public void beginHand() {
 	    // stub: nothing to do here
 	}
