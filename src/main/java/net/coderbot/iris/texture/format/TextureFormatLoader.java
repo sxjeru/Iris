@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 public class TextureFormatLoader {
@@ -32,9 +33,15 @@ public class TextureFormatLoader {
 
 	@Nullable
 	private static TextureFormat loadFormat(ResourceManager resourceManager) {
-		try (Resource resource = resourceManager.getResource(LOCATION)) {
+		try {
+			Optional<Resource> resource = resourceManager.getResource(LOCATION);
+
+			if (resource.isEmpty()) {
+				return null;
+			}
+
 			Properties properties = new Properties();
-			properties.load(resource.getInputStream());
+			properties.load(resource.get().open());
 			String format = properties.getProperty("format");
 			if (format != null && !format.isEmpty()) {
 				String[] splitFormat = format.split("/");
