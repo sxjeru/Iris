@@ -8,6 +8,7 @@ import net.coderbot.iris.compat.sodium.SodiumVersionCheck;
 import net.coderbot.iris.config.IrisConfig;
 import net.coderbot.iris.gl.GLDebug;
 import net.coderbot.iris.gl.shader.StandardMacros;
+import net.coderbot.iris.gui.screen.ShaderLoadErrorScreen;
 import net.coderbot.iris.gui.screen.ShaderPackScreen;
 import net.coderbot.iris.pipeline.DeferredWorldRenderingPipeline;
 import net.coderbot.iris.pipeline.FixedFunctionWorldRenderingPipeline;
@@ -30,6 +31,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.jetbrains.annotations.NotNull;
@@ -641,6 +643,9 @@ public class Iris {
 			// TODO: This should be reverted if a dimension change causes shaders to compile again
 			currentPackName = "(off) [fallback, check your logs for details]";
 
+			if (Minecraft.getInstance().screen instanceof ShaderPackScreen) {
+				Minecraft.getInstance().setScreen(new ShaderLoadErrorScreen(new TranslatableComponent("iris.shaders.reloaded.failure.gui"), new TranslatableComponent("iris.shaders.reloaded.failure.gui.info"), e));
+			}
 			return new FixedFunctionWorldRenderingPipeline();
 		}
 	}

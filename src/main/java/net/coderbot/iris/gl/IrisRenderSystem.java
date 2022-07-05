@@ -2,12 +2,14 @@ package net.coderbot.iris.gl;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.coderbot.iris.gl.shader.StandardMacros;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.EXTShaderImageLoadStore;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL42C;
 
@@ -19,6 +21,7 @@ import java.nio.IntBuffer;
  * This class is responsible for abstracting calls to OpenGL and asserting that calls are run on the render thread.
  */
 public class IrisRenderSystem {
+	private static int glslVersion;
 	public static void getIntegerv(int pname, int[] params) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
 		GL30C.glGetIntegerv(pname, params);
@@ -171,6 +174,14 @@ public class IrisRenderSystem {
 		} else {
 			return 0;
 		}
+	}
+
+	public static void initRenderer() {
+		glslVersion = Integer.parseInt(StandardMacros.getGlVersion(GL20C.GL_SHADING_LANGUAGE_VERSION));
+	}
+
+	public static int getGlslVersion() {
+		return glslVersion;
 	}
 
 	// These functions are deprecated and unavailable in the core profile.
