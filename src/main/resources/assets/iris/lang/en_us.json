@@ -11,7 +11,6 @@
   "iris.keybind.toggleShaders": "Toggle Shaders",
   "iris.keybinds": "Iris",
   "iris.shaders.reloaded.failure": "Failed to reload shaders! Reason: %s",
-  "iris.shaders.reloaded.failure.gui": "Failed to reload shaders!",
   "iris.shaders.toggled.failure": "Failed to toggle shaders! Reason: %s",
   "iris.sodium.failure.title": "Iris failed to load!",
   "iris.sodium.failure.download": "Download Sodium",
@@ -19,7 +18,8 @@
   "iris.sodium.failure.reason.incompatible": "Iris requires Sodium for good performance, but an incompatible version was found. Please download the correct version of Sodium, place it in your mods folder, remove the incorrect version, and re-launch the game.",
 
   "iris.shaders.reloaded.failure.gui": "Failed to reload shaders!",
-  "iris.shaders.reloaded.failure.gui.info": "The shader failed to load! The shader may be incompatible with Iris or your GPU, the error will have more information.",
+  "iris.shaders.reloaded.failure.gui.info.1": "The shader failed to load! The shader may be incompatible with Iris",
+  "iris.shaders.reloaded.failure.gui.info.2": "or your GPU, the error will have more information.",
 
   "options.iris.apply": "Apply",
   "options.iris.refresh": "Refresh",

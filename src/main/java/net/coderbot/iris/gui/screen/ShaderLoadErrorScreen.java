@@ -10,12 +10,15 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class ShaderLoadErrorScreen extends Screen {
-	private final Component info;
+	private final Component line1;
+	private final Component line2;
 	private final Exception e;
+	private int showCopySuccess = -1;
 
-	public ShaderLoadErrorScreen(Component title, Component info, Exception e) {
+	public ShaderLoadErrorScreen(Component title, Component line1, Component line2, Exception e) {
 		super(title);
-		this.info = info;
+		this.line1 = line1;
+		this.line2 = line2;
 		this.e = e;
 	}
 
@@ -33,6 +36,7 @@ public class ShaderLoadErrorScreen extends Screen {
 				String errorString = writer.toString();
 				minecraft.keyboardHandler.setClipboard(errorString);
 			}
+			showCopySuccess = 240;
 		}));
 	}
 
@@ -41,8 +45,13 @@ public class ShaderLoadErrorScreen extends Screen {
 		this.fillGradient(poseStack, 0, 0, width, height, -1073741824, -1073741824);
 
 		drawCenteredString(poseStack, this.font, title, (int)(this.width * 0.5), (this.height - 166) / 2 + 8, 0xFFFFFF);
-		drawCenteredString(poseStack, this.font, info, (int)(this.width * 0.5), (this.height - 140) / 2 + 8, 0xFFFFFF);
+		drawCenteredString(poseStack, this.font, line1, (int)(this.width * 0.5), (this.height - 140) / 2 + 8, 0xFFFFFF);
+		drawCenteredString(poseStack, this.font, line2, (int)(this.width * 0.5), (this.height - 114) / 2 + 8, 0xFFFFFF);
 
+		if (showCopySuccess > -1) {
+			showCopySuccess--;
+			drawCenteredString(poseStack, this.font, Component.nullToEmpty("Copied error to clipboard!"), (int)(this.width * 0.5), this.height / 2 + 102 - 16, 0xFFFFFF);
+		}
 		super.render(poseStack, i, j, f);
 	}
 }

@@ -3,7 +3,6 @@ package net.coderbot.iris;
 import com.google.common.base.Throwables;
 import com.mojang.blaze3d.platform.GlDebug;
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.brigadier.arguments.BoolArgumentType;
 import net.coderbot.iris.compat.sodium.SodiumVersionCheck;
 import net.coderbot.iris.config.IrisConfig;
 import net.coderbot.iris.gl.GLDebug;
@@ -31,7 +30,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.jetbrains.annotations.NotNull;
@@ -644,7 +642,7 @@ public class Iris {
 			currentPackName = "(off) [fallback, check your logs for details]";
 
 			if (Minecraft.getInstance().screen instanceof ShaderPackScreen) {
-				Minecraft.getInstance().setScreen(new ShaderLoadErrorScreen(new TranslatableComponent("iris.shaders.reloaded.failure.gui"), new TranslatableComponent("iris.shaders.reloaded.failure.gui.info"), e));
+				Minecraft.getInstance().setScreen(new ShaderLoadErrorScreen(new TranslatableComponent("iris.shaders.reloaded.failure.gui").withStyle(ChatFormatting.BOLD), new TranslatableComponent("iris.shaders.reloaded.failure.gui.info.1"), new TranslatableComponent("iris.shaders.reloaded.failure.gui.info.2"), e));
 			}
 			return new FixedFunctionWorldRenderingPipeline();
 		}
