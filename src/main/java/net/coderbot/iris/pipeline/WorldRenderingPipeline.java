@@ -3,6 +3,7 @@ package net.coderbot.iris.pipeline;
 import net.coderbot.iris.gbuffer_overrides.matching.SpecialCondition;
 import net.coderbot.iris.gbuffer_overrides.state.RenderTargetStateListener;
 import net.coderbot.iris.mixin.LevelRendererAccessor;
+import net.coderbot.iris.shaderpack.CloudSetting;
 import net.coderbot.iris.uniforms.FrameUpdateNotifier;
 import net.minecraft.client.Camera;
 
@@ -37,9 +38,11 @@ public interface WorldRenderingPipeline {
 
 	boolean shouldDisableVanillaEntityShadows();
 	boolean shouldDisableDirectionalShading();
-	boolean shouldRenderClouds();
+	CloudSetting getCloudSetting();
 	boolean shouldRenderUnderwaterOverlay();
 	boolean shouldRenderVignette();
+	boolean shouldRenderSun();
+	boolean shouldRenderMoon();
 	boolean shouldWriteRainAndSnowToDepthBuffer();
 	boolean shouldRenderParticlesBeforeDeferred();
 

@@ -35,6 +35,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -98,6 +99,11 @@ public class MixinLevelRenderer {
 		pipeline.renderShadows((LevelRendererAccessor) this, camera);
 	}
 
+	@ModifyVariable(method = "renderSky", at = @At(value = "HEAD"), index = 5, argsOnly = true)
+	private boolean iris$alwaysRenderSky(boolean value) {
+		return false;
+	}
+
 	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = RENDER_SKY))
 	private void iris$beginSky(PoseStack poseStack, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projection, CallbackInfo callback) {
 		// Use CUSTOM_SKY until levelFogColor is called as a heuristic to catch FabricSkyboxes.
@@ -156,13 +162,6 @@ public class MixinLevelRenderer {
 	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = RENDER_CLOUDS))
 	private void iris$beginClouds(PoseStack poseStack, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projection, CallbackInfo callback) {
 		pipeline.setPhase(WorldRenderingPhase.CLOUDS);
-	}
-
-	@Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
-	private void iris$maybeRemoveClouds(PoseStack poseStack, Matrix4f projectionMatrix, float f, double d, double e, double g, CallbackInfo ci) {
-		if (!pipeline.shouldRenderClouds()) {
-			ci.cancel();
-		}
 	}
 
 	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = RENDER_CLOUDS, shift = At.Shift.AFTER))
