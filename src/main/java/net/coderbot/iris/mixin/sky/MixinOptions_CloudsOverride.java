@@ -5,6 +5,7 @@ import net.coderbot.iris.shaderpack.CloudSetting;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = Options.class, priority = 1010)
 public class MixinOptions_CloudsOverride {
 	@Shadow
+	@Final
 	private OptionInstance<Integer> renderDistance;
 
 	@Inject(method = "getCloudsType", at = @At("HEAD"), cancellable = true)
